@@ -149,18 +149,18 @@
 
           <div class="relative">
             <label for="email" class="ml-3 text-sm font-bold text-gray-700 tracking-wide">Usuario</label>
-            <input id="email" name="email" type="text" placeholder="Usuario"
+            <input id="email" name="email" type="text" placeholder="Usuario" [value]="username" (input)="username=$any($event.target).value"
                    class="w-full text-base px-4 py-2 border-b border-gray-300 focus:outline-none rounded-2xl focus:border-indigo-500" />
           </div>
 
           <div class="mt-8">
             <label for="password" class="ml-3 text-sm font-bold text-gray-700 tracking-wide">Contraseña</label>
-            <input id="password" name="password" type="password" autocomplete="current-password" placeholder="************"
+            <input id="password" name="password" type="password" autocomplete="current-password" placeholder="************" [value]="password" (input)="password=$any($event.target).value"
                    class="w-full text-base px-4 py-2 border-b rounded-2xl border-gray-300 focus:outline-none focus:border-indigo-500" />
           </div>
 
           <div>
-            <button type="submit" 
+            <button type="submit" (click)="onSubmit()"
               class="w-full flex justify-center bg-gradient-to-r from-gray-600 to-gray-800 hover:bg-gradient-to-l hover:from-gray-500 hover:to-gray-600 text-gray-100 p-4 rounded-full tracking-wide font-semibold shadow-lg cursor-pointer transition ease-in duration-500">
               Inicia Sesión
             </button>
