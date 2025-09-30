@@ -30,14 +30,14 @@
     "@angular/platform-browser": "^20.3.0",
     "@angular/platform-server": "^20.3.0",
     "@angular/router": "^20.3.0",
-    "@angular/ssr": "^20.3.3",
     "@tailwindcss/cli": "^4.1.13",
     "chart.js": "^4.5.0",
     "express": "^5.1.0",
     "ng2-charts": "^8.0.0",
     "rxjs": "~7.8.0",
     "tailwindcss": "^4.1.13",
-    "tslib": "^2.3.0"
+    "tslib": "^2.3.0",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@angular/build": "^20.3.3",
