@@ -8,10 +8,10 @@
     </h1>
 
     <ol class="mt-4">
-      @for (item of items | slice:0:5; track $index) {
+      @for (item of registros | slice:0:5; track $index) {
         <li class="flex items-center gap-3 p-4 m-2 bg-white rounded-lg shadow-md">
           <div class="w-10 h-10 flex-shrink-0 animate-pulse bg-gray-800 rounded-lg"></div>
-          <span class="flex-1">Item {{ item }}</span>
+          <span class="flex-1">{{ item.nombre }} | {{item.hora_inicio}}</span>
         </li>
       }
     </ol>
@@ -29,10 +29,10 @@
     </h1>
 
     <ol class="mt-4">
-      @for (item of items | slice:0:5; track $index) {
+      @for (item of registros | slice:0:5; track $index) {
         <li class="flex items-center gap-3 p-4 m-2 bg-white rounded-lg shadow-md">
           <div class="w-10 h-10 flex-shrink-0 animate-pulse bg-gray-800 rounded-lg"></div>
-          <span class="flex-1">Item {{ item }}</span>
+          <span class="flex-1">{{ item.nombre }}</span>
         </li>
       }
     </ol>

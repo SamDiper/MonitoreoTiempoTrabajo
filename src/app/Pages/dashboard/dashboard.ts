@@ -1,5 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
+import { Registro } from '../../../Interfaces/registro';
+import { RegistrosService } from '../../../Services/registrosService';
 
 @Component({
   selector: 'app-dashboard',
@@ -8,5 +10,16 @@ import { Component } from '@angular/core';
   styleUrl: '../../../output.css'
 })
 export class Dashboard {
-  items = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+  
+  registros: Registro[] = [];
+  constructor(private registrosService: RegistrosService) {
+    this.registros = this.registrosService.registros; 
+  }
+
+  ngOnInit(): void {
+    this.registrosService.registros$.subscribe(data => {
+      this.registros = data;
+      console.log('Registros actualizados:', this.registros);
+    });
+  }
 }

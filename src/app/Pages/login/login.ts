@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import * as XLSX from 'xlsx';
 import { Registro } from '../../../Interfaces/registro';
+import { RegistrosService } from '../../../Services/registrosService';
 
 @Component({
   selector: 'app-login',
@@ -22,7 +23,7 @@ export class Login {
 
   registros: Registro[] = [];
 
-  constructor(private router: Router) {}
+  constructor(private router: Router, private registrosService: RegistrosService) {}
 
   ngOnInit(): void {
     try { localStorage.clear(); } catch {}
@@ -67,7 +68,11 @@ export class Login {
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
 
-        const rows: any[] = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
+        const rows = XLSX.utils.sheet_to_json(worksheet, {
+          defval: '',
+          raw: false,            
+          dateNF: 'dd/mm/yyyy'
+        });
 
         this.registros = rows.map((row: any, idx: number) => ({
           id: idx + 1,
@@ -76,7 +81,8 @@ export class Login {
           hora_salida: (row.hora_salida ?? row['hora salida'] ?? row.HORA_SALIDA ?? '').toString(),
           fecha: (row.fecha ?? row.Fecha ?? row.FECHA ?? '').toString(),
         }));
-        console.log(this.registros);
+
+        this.registrosService.setRegistros(this.registros);
 
         if (this.registros.length === 0) {
           this.fileError = 'El archivo no contiene filas válidas';
