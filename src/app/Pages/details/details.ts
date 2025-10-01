@@ -45,12 +45,6 @@ export class Details {
     this.totalHorasTrabajadas = this.datosTrabajador.totalHorasTrabajadas != null ? (this.datosTrabajador.totalHorasTrabajadas / 3600) : 0;
     this.promedioHorasTrabajadas = this.totalHorasTrabajadas/this.datosTrabajador.registros.length;
 
-    var hours = Math.floor(this.promedioHorasTrabajadas);
-    var minutes_decimal = (this.promedioHorasTrabajadas - hours) * 60;
-    var minutes =  Math.round(minutes_decimal);
-
-    this.promedioHorasTrabajadas = `${hours}h : ${minutes_decimal}m`
-
   }
 
 
