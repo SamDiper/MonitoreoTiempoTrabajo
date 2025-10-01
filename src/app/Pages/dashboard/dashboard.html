@@ -1,17 +1,23 @@
-<div class="min-h-dvh w-full px-4 py-6 flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-evenly overflow-y-auto"><!-- + overflow-y-auto -->
+<div class="min-h-dvh w-full px-4 py-6 flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-evenly overflow-y-auto">
   <div class="w-full lg:w-1/3">
     <h1 class="bg-gray-800 text-white p-3 font-bold rounded-2xl flex items-center justify-between">
       <span>RANKING HORA DE LLEGADA</span>
-      <button class="text-gray-800 p-1 bg-gray-200 rounded-full hover:bg-gray-300 transition" title="Ordenar">
-        ▼
+      @if (toggleFlagLlegada) {
+        <button (click)="toggle('T')" class="text-gray-800 p-1 bg-gray-200 rounded-full hover:bg-gray-300 transition" title="Ordenar">
+          ▼
       </button>
+      } @else {
+        <button (click)="toggle('T')" class="text-gray-800 p-1 bg-gray-200 rounded-full hover:bg-gray-300 transition" title="Ordenar">
+          ▲
+        </button>
+      }
     </h1>
 
     <ol class="mt-4">
-      @for (item of registros | slice:0:5; track $index) {
+      @for (item of this.publicFuncion.calcularPromedioEntradaSalidaPorTrabajador(registrosHoraLLegada) | slice:0:5; track $index) {
         <li class="flex items-center gap-3 p-4 m-2 bg-white rounded-lg shadow-md">
           <div class="w-10 h-10 flex-shrink-0 animate-pulse bg-gray-800 rounded-lg"></div>
-          <span class="flex-1">{{ item.nombre }} | {{item.hora_inicio}}</span>
+          <span class="flex-1">{{ item.nombre }} | {{item.promedioEntradaFormateado}}</span>
         </li>
       }
     </ol>
@@ -23,16 +29,23 @@
   <div class="w-full lg:w-1/3">
     <h1 class="bg-gray-800 text-white p-3 font-bold rounded-2xl flex items-center justify-between">
       <span>RANKING HORAS TRABAJADAS</span>
-      <button class="text-gray-800 p-1 bg-gray-200 rounded-full hover:bg-gray-300 transition" title="Ordenar">
-        ▼
+      @if (toggleFlagTrabajadas) {
+        <button (click)="toggle('L')" class="text-gray-800 p-1 bg-gray-200 rounded-full hover:bg-gray-300 transition" title="Ordenar">
+          ▼
       </button>
+      } @else {
+        <button (click)="toggle('L')" class="text-gray-800 p-1 bg-gray-200 rounded-full hover:bg-gray-300 transition" title="Ordenar">
+          ▲
+        </button>
+      }
     </h1>
 
     <ol class="mt-4">
-      @for (item of registros | slice:0:5; track $index) {
+      <p>Faltan por dia, por mes y por año y el formato de las horas trabajadas</p>
+      @for (item of this.publicFuncion.procesarDatosPorTrabajador(registrosHorasTrabajadas) | slice:0:5; track $index) {
         <li class="flex items-center gap-3 p-4 m-2 bg-white rounded-lg shadow-md">
           <div class="w-10 h-10 flex-shrink-0 animate-pulse bg-gray-800 rounded-lg"></div>
-          <span class="flex-1">{{ item.nombre }}</span>
+          <span class="flex-1">{{ item.nombre }} | {{this.publicFuncion.parseHoursMinute(item.totalHorasTrabajadas/3600)}}</span>
         </li>
       }
     </ol>
@@ -41,17 +54,17 @@
   <div class="w-full lg:w-1/3 flex flex-col gap-4 text-gray-900 font-bold text-center">
     <div class="flex flex-col sm:flex-row gap-4 items-center">
       <h2 class="bg-gray-800 text-white rounded-2xl p-3 w-full sm:w-2/3">PROMEDIO DE HORAS TRABAJADAS</h2>
-      <div class="bg-transparent border-4 border-gray-900 rounded-full text-gray-900 px-3 py-7 shrink-0">9 horas</div>
+      <div class="bg-transparent border-4 border-gray-900 rounded-full text-gray-900 px-3 py-7 shrink-0">{{averageHorasTrabajadasAll()}}</div>
     </div>
 
     <div class="flex flex-col sm:flex-row gap-4 items-center">
       <h2 class="bg-gray-800 text-white rounded-2xl p-3 w-full sm:w-2/3">PROMEDIO HORA DE SALIDA</h2>
-      <div class="bg-transparent border-4 border-gray-900 rounded-full text-gray-900 px-3 py-7 shrink-0">9 horas</div>
+      <div class="bg-transparent border-4 border-gray-900 rounded-full text-gray-900 px-3 py-7 shrink-0">{{averageHoraSalida()}}</div>
     </div>
 
     <div class="flex flex-col sm:flex-row gap-4 items-center">
       <h2 class="bg-gray-800 text-white rounded-2xl p-3 w-full sm:w-2/3">PROMEDIO HORA DE LLEGADA</h2>
-      <div class="bg-transparent border-4 border-gray-900 rounded-full text-gray-900 px-3 py-7 shrink-0">9 horas</div>
+      <div class="bg-transparent border-4 border-gray-900 rounded-full text-gray-900 px-3 py-7 shrink-0">{{averageHoraEntrada()}}</div>
     </div>
   </div>
 </div>

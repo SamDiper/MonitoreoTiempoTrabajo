@@ -2,41 +2,51 @@
   <!-- Columna 1: Trabajador y métricas -->
   <div class="w-full lg:w-1/3 flex flex-col gap-4 text-gray-900 font-bold text-center">
     <h1 class="bg-gray-800 text-white p-3 font-bold rounded-2xl flex items-center justify-between">
-      <span>SELECCIONE UN TRABAJADOR</span>
-      <button class="text-gray-800 p-1 bg-gray-200 rounded-full hover:bg-gray-300 transition" title="Agregar">▼</button>
+      <select 
+        (change)="mapInfoTrabajador($event)"
+        class="appearance-none block w-full cursor-pointer text-lg py-3 px-4 pr-10 bg-white text-gray-800 border border-gray-300 rounded-lg"
+      >
+        <option value="" disabled selected>Seleccione un trabajador</option>
+
+        @for (item of this.publicFuncion.procesarDatosPorTrabajador(registrosTrabajadores); track item.nombre) {
+          <option class="font-black text-white in-hover:bg-gray-800" value="{{ item.nombre }}">
+            {{ item.nombre }}
+          </option>
+        }
+      </select>
     </h1>
 
     <div class="flex flex-row gap-4 items-center justify-evenly">
       <!-- PROFILE -->
       <div class="bg-gray-800 w-1/3 border-4 border-gray-900 rounded-full text-gray-900 px-3 py-3 shrink-0">
-        <div class="bg-gray-800 w-full h-full border-4 border-white rounded-full text-white px-1 py-8 text-5xl shrink-0">A</div>
+        <div class="bg-gray-800 w-full h-full border-4 border-white rounded-full text-white px-1 py-8 text-5xl shrink-0">{{inicialNombre}}</div>
       </div>
       <!-- INFO -->
       <div class="w-2/3 flex flex-col gap-4">
         <p class="text-white font-bold text-center bg-gray-800 rounded-4xl">TOTAL HORAS TRABAJADAS </p>
-        <span class="bg-white text-gray-800">{{ totalHorasTrabajadas }}</span>
+        <span class="bg-white text-gray-800">{{ totalHorasTrabajadas }} Horas</span>
         <p class="text-white font-bold text-center bg-gray-800 rounded-4xl">PORCENTAJE DE ASISTENCIAS </p>
         <span>{{ porcentajeAsistencias }}%</span>
       </div>
     </div>
 
-    <div class="flex flex-row gap-4">
+    <div class="flex flex-row gap-4 items-center">
       <div class="w-full lg:w-1/3 flex flex-col text-gray-900 font-bold">
         <div class="items-center">
           <h2 class="bg-gray-800 h-1/2 text-white rounded-2xl p-3 mb-5 w-full">PROMEDIO HORA DE LLEGADA</h2>
-          <div class="bg-transparent border-4 border-gray-900 rounded-full text-gray-900 px-3 py-12 shrink-0 text-3xl">9 horas</div>
+          <div class="bg-transparent border-4 border-gray-900 rounded-full text-gray-900 px-3 py-12 shrink-0 text-2xl">{{promedioHoraEntrada}}</div>
         </div>
       </div>
       <div class="w-full lg:w-1/3 flex flex-col text-gray-900 font-bold">
         <div class="items-center">
           <h2 class="bg-gray-800 h-1/2 text-white rounded-2xl p-3 mb-5 w-full">PROMEDIO HORA DE SALIDA</h2>
-          <div class="bg-transparent border-4 border-gray-900 rounded-full text-gray-900 px-3 py-12 shrink-0 text-3xl">9 horas</div>
+          <div class="bg-transparent border-4 border-gray-900 rounded-full text-gray-900 px-3 py-12 shrink-0 text-2xl">{{promedioHoraSalida}}</div>
         </div>
       </div>
       <div class="w-full lg:w-1/3 flex flex-col text-gray-900 font-bold">
         <div class="items-center">
           <h2 class="bg-gray-800 h-1/2 text-white rounded-2xl p-2 mb-5 w-full text-sm">PROMEDIO DE HORAS TRABAJADAS DIARIAS</h2>
-          <div class="bg-transparent border-4 border-gray-900 rounded-full text-gray-900 px-3 py-12 shrink-0 text-3xl">9 horas</div>
+          <div class="bg-transparent border-4 border-gray-900 rounded-full text-gray-900 px-3 py-12 shrink-0 text-2xl">{{promedioHorasTrabajadas}}</div>
         </div>
       </div>
     </div>

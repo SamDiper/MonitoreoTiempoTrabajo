@@ -1,8 +1,11 @@
 import { CommonModule } from '@angular/common';
-import { Component, computed, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { BaseChartDirective } from 'ng2-charts';
 import 'chart.js/auto';
 import type { ChartData, ChartOptions } from 'chart.js';
+import { Registro } from '../../../Interfaces/registro';
+import { RegistrosService } from '../../../Services/registrosService';
+import { App } from '../../app';
 
 @Component({
   selector: 'app-details',
@@ -12,12 +15,47 @@ import type { ChartData, ChartOptions } from 'chart.js';
   styleUrl: '../../../output.css'
 })
 export class Details {
-  items = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-  totalHorasTrabajadas = 50;
-  porcentajeAsistencias = 1;
+  publicFuncion = inject(App);
+
+  registrosTrabajadores: Registro[] = [];
+
+  constructor(private registrosService: RegistrosService) {
+    this.registrosTrabajadores = [...this.registrosService.registros];
+  }
+
+  inicialNombre="---";
+  totalHorasTrabajadas: any ="-";
+  porcentajeAsistencias: any ="-";
+  promedioHoraEntrada = "---";
+  promedioHoraSalida = "---";
+  promedioHorasTrabajadas: any ="---";
+  datosTrabajadorEntrada: any;
+  datosTrabajador: any;
+
+
+  mapInfoTrabajador(event: Event) {
+    const selectElement = event.target as HTMLSelectElement;
+    this.inicialNombre = selectElement.value.charAt(0).toUpperCase();
+    this.datosTrabajadorEntrada = this.publicFuncion.calcularPromedioEntradaSalidaPorTrabajador(this.registrosTrabajadores).find((item) => item.nombre === selectElement.value);
+    this.datosTrabajador = this.publicFuncion.procesarDatosPorTrabajador(this.registrosTrabajadores).find((item) => item.nombre === selectElement.value);
+    
+    this.promedioHoraEntrada = this.datosTrabajadorEntrada.promedioEntradaFormateado ?? "---";
+    this.promedioHoraSalida = this.datosTrabajadorEntrada.promedioSalidaFormateado ?? "---";
+
+    this.totalHorasTrabajadas = this.datosTrabajador.totalHorasTrabajadas != null ? (this.datosTrabajador.totalHorasTrabajadas / 3600) : 0;
+    this.promedioHorasTrabajadas = this.totalHorasTrabajadas/this.datosTrabajador.registros.length;
+
+    var hours = Math.floor(this.promedioHorasTrabajadas);
+    var minutes_decimal = (this.promedioHorasTrabajadas - hours) * 60;
+    var minutes =  Math.round(minutes_decimal);
+
+    this.promedioHorasTrabajadas = `${hours}h : ${minutes_decimal}m`
+
+  }
+
+
   current = signal(new Date());
 
-  // Navegación
   prevMonth() {
     const d = new Date(this.current());
     d.setMonth(d.getMonth() - 1);
@@ -68,27 +106,27 @@ export class Details {
     return d.getFullYear() === t.getFullYear() && d.getMonth() === t.getMonth() && d.getDate() === t.getDate();
   }
 
-  barData: ChartData<'bar'> = {
-  labels: ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'],
-  datasets: [
-  {
-    label: 'Horas trabajadas',
-    data: [8, 7, 9, 8, 6, 0, 0],
-    backgroundColor: '#3b82f6', // tailwind blue-500
-    borderRadius: 6
-  }
-  ]
+    barData: ChartData<'bar'> = {
+    labels: ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'],
+    datasets: [
+      {
+        label: 'Horas trabajadas',
+        data: [8, 7, 9, 8, 6, 0, 0],
+        backgroundColor: '#1e2838',
+        borderRadius: 6
+      }
+    ]
   };
 
-  barOptions: ChartOptions<'bar'> = {
-  responsive: true,
-  maintainAspectRatio: false,
-  scales: {
-    x: { grid: { display: false } },
-    y: { beginAtZero: true }
-  },
-    plugins: {
-    legend: { display: true, position: 'bottom' }
-  }
+    barOptions: ChartOptions<'bar'> = {
+    responsive: true,
+    maintainAspectRatio: false,
+    scales: {
+      x: { grid: { display: false } },
+      y: { beginAtZero: true }
+    },
+      plugins: {
+      legend: { display: true, position: 'bottom' }
+    }
   };
 }
