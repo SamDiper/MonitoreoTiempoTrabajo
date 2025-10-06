@@ -1,0 +1,170 @@
+<div class="min-h-screen bg-gray-100 p-6">
+  <div class="max-w-7xl mx-auto">
+    <!-- Header -->
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold text-gray-900">Dashboard de Control de Horarios</h1>
+      <p class="text-gray-600 mt-2">Resumen general de asistencia y horarios</p>
+    </div>
+
+    <!-- Rankings Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+      
+      <!-- Ranking Entradas -->
+      <div class="bg-white rounded-xl shadow-lg p-6">
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="text-xl font-bold text-gray-800">
+            Top 5 - Frecuencia de Llegada
+          </h2>
+          <button 
+            class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition">
+            @if (mostrarEntradasTemprano) {
+              Más Temprano ↓
+            } @else {
+              Más Tarde ↑
+            }
+          </button>
+        </div>
+        
+        <div class="space-y-3">
+          @for (item of rankingEntradas; track item.nombre; let i = $index) {
+            <div class="flex items-center gap-4 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+              <div class="w-10 h-10 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center text-white font-bold">
+                {{ i + 1 }}
+              </div>
+              <div class="flex-1">
+                <div class="font-semibold text-gray-800">{{ item.nombre }}</div>
+                <div class="text-sm text-gray-600">
+                  Rango: <span class="font-medium">{{ item.rangoMasComun }}</span>
+                </div>
+              </div>
+            </div>
+          } @empty {
+            <p class="text-gray-500 text-center py-4">No hay datos disponibles</p>
+          }
+        </div>
+      </div>
+
+      <!-- Ranking Salidas -->
+      <div class="bg-white rounded-xl shadow-lg p-6">
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="text-xl font-bold text-gray-800">
+            Top 5 - Frecuencia de Salida
+          </h2>
+          <button 
+            class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition">
+            @if (mostrarSalidasTemprano) {
+              Más Temprano ↓
+            } @else {
+              Más Tarde ↑
+            }
+          </button>
+        </div>
+        
+        <div class="space-y-3">
+          @for (item of rankingSalidas; track item.nombre; let i = $index) {
+            <div class="flex items-center gap-4 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+              <div class="w-10 h-10 bg-gradient-to-br from-red-400 to-red-600 rounded-full flex items-center justify-center text-white font-bold">
+                {{ i + 1 }}
+              </div>
+              <div class="flex-1">
+                <div class="font-semibold text-gray-800">{{ item.nombre }}</div>
+                <div class="text-sm text-gray-600">
+                  Rango: <span class="font-medium">{{ item.rangoMasComun }}</span>
+                </div>
+              </div>
+            </div>
+          } @empty {
+            <p class="text-gray-500 text-center py-4">No hay datos disponibles</p>
+          }
+        </div>
+      </div>
+
+      <!-- Ranking Horas Trabajadas -->
+      <div class="bg-white rounded-xl shadow-lg p-6">
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="text-xl font-bold text-gray-800">
+            Top 5 - Horas Trabajadas
+          </h2>
+          <button 
+            
+            class="bg-purple-500 text-white px-4 py-2 rounded-lg hover:bg-purple-600 transition">
+            @if (mostrarMasHoras) {
+              Más Horas ↓
+            } @else {
+              Menos Horas ↑
+            }
+          </button>
+        </div>
+        
+        <div class="space-y-3">
+          @for (item of rankingHoras; track item.nombre; let i = $index) {
+            <div class="flex items-center gap-4 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+              <div class="w-10 h-10 bg-gradient-to-br from-purple-400 to-purple-600 rounded-full flex items-center justify-center text-white font-bold">
+                {{ i + 1 }}
+              </div>
+              <div class="flex-1">
+                <div class="font-semibold text-gray-800">{{ item.nombre }}</div>
+                <div class="text-sm text-gray-600">
+                  Total: <span class="font-medium">{{ (item.horasTotales) }}h</span>
+                  <span class="ml-2 text-purple-600">(~{{ publicFunction.horasDecimalAHHMMSS(item.promedioHorasDiarias) }}h/día)</span>
+                </div>
+              </div>
+            </div>
+          } @empty {
+            <p class="text-gray-500 text-center py-4">No hay datos disponibles</p>
+          }
+        </div>
+      </div>
+
+      <!-- Estadísticas Generales -->
+      <div class="bg-white rounded-xl shadow-lg p-6">
+        <h2 class="text-xl font-bold text-gray-800 mb-6">Estadísticas Generales</h2>
+        
+        <div class="space-y-4">
+          <!-- Frecuencia Entrada General -->
+          <div class="p-4 bg-green-50 rounded-lg border border-green-200">
+            <h3 class="text-sm font-semibold text-green-800 mb-1">Rango de Entrada Más Común</h3>
+            <p class="text-2xl font-bold text-green-900">
+              {{ estadisticasGenerales.frecuenciaEntradaGeneral?.rango || 'N/A' }}
+            </p>
+            <p class="text-sm text-green-700 mt-1">
+              {{ estadisticasGenerales.frecuenciaEntradaGeneral?.porcentaje || 0 }}% de frecuencia
+            </p>
+          </div>
+
+          <!-- Frecuencia Salida General -->
+          <div class="p-4 bg-red-50 rounded-lg border border-red-200">
+            <h3 class="text-sm font-semibold text-red-800 mb-1">Rango de Salida Más Común</h3>
+            <p class="text-2xl font-bold text-red-900">
+              {{ estadisticasGenerales.frecuenciaSalidaGeneral?.rango || 'N/A' }}
+            </p>
+            <p class="text-sm text-red-700 mt-1">
+              {{ estadisticasGenerales.frecuenciaSalidaGeneral?.porcentaje || 0 }}% de frecuencia
+            </p>
+          </div>
+
+          <!-- Promedio Horas Diarias -->
+          <div class="p-4 bg-purple-50 rounded-lg border border-purple-200">
+            <h3 class="text-sm font-semibold text-purple-800 mb-1">Promedio de Horas Diarias</h3>
+            <p class="text-2xl font-bold text-purple-900">
+              {{ estadisticasGenerales.promedioHorasDiarias || '0' }} horas
+            </p>
+            <p class="text-sm text-purple-700 mt-1">Promedio general de todos los trabajadores</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Navigation -->
+    <div class="flex gap-4 justify-center">
+      <a routerLink="/trabajador" 
+         class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition font-medium">
+        Ver Detalles por Trabajador →
+      </a>
+      <a routerLink="/charts" 
+         class="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition font-medium">
+        Ver Gráficos →
+      </a>
+    </div>
+  </div>
+</div>
