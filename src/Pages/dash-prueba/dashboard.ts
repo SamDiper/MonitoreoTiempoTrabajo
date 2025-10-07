@@ -11,62 +11,63 @@ import { RegistroProcessorService } from '../../Services/RegistroAgrupado';
   styleUrl: '../../output.css',
 })
 export class DashboardComponent implements OnInit {
-  publicFunction = inject(RegistroProcessorService);
+estadisticasGenerales: any = {};
+  trabajadoresArray: any[] = [];
+  promedioGeneral = '';
+  
   // Rankings
-  rankingEntradas: any[] = [];
-  rankingSalidas: any[] = [];
-  rankingHoras: any[] = [];
+  rankingMasHoras: any[] = [];
+  rankingMenosHoras: any[] = [];
+  rankingMasPromedio: any[] = [];
   
   // Toggles
-  mostrarEntradasTemprano = true;
-  mostrarSalidasTemprano = true;
   mostrarMasHoras = true;
-  registro: any = [];
-  // Estadísticas generales
-  estadisticasGenerales: any = {};
 
-  constructor(private registroService: RegistroProcessorService) {
-     this.registro= localStorage.getItem('registros');
-  }
+  constructor(private registroService: RegistroProcessorService) {}
 
   ngOnInit() {
-    // this.cargarDatos();
-    console.log(this.publicFunction.agruparPorFechaYUsuario(JSON.parse(this.registro) as any[]));
-    
+    this.cargarEstadisticas();
+    console.log('horas: ',this.rankingMasHoras);
+    console.log('promedio: ', this.rankingMasPromedio);
   }
 
-  // cargarDatos() {
-  //   this.actualizarRankingEntradas();
-  //   this.actualizarRankingSalidas();
-  //   this.actualizarRankingHoras();
-  //   this.estadisticasGenerales = this.registroService.obtenerEstadisticasGenerales();
+  cargarEstadisticas() {
+    const stats = this.registroService.calcularPromediosHorasTrabajadas();
+    
+    this.trabajadoresArray = Array.from(stats.porTrabajador.entries()).map(([nombre, datos]) => ({
+      nombre,
+      totalHoras: datos.totalHoras,
+      dias: datos.dias,
+      promedio: datos.promedio,
+      promedioDecimal: this.registroService.horasHHMMSSADecimal(datos.promedio)
+    }));
+    
+    this.promedioGeneral = stats.promedioGeneral;    
+    this.actualizarRankings();
+  }
 
-  // }
+  actualizarRankings() {
+    // Ranking por total de horas
+    this.rankingMasHoras = [...this.trabajadoresArray]
+      .sort((a, b) => this.mostrarMasHoras ? 
+        b.totalHoras - a.totalHoras : 
+        a.totalHoras - b.totalHoras
+      )
+      .slice(0, 5);
+    
+    // Ranking por promedio diario
+    this.rankingMasPromedio = [...this.trabajadoresArray]
+      .sort((a, b) => b.promedioDecimal - a.promedioDecimal)
+      .slice(0, 5);
+  }
 
-  // toggleEntradas() {
-  //   this.mostrarEntradasTemprano = !this.mostrarEntradasTemprano;
-  //   this.actualizarRankingEntradas();
-  // }
+  toggleHoras() {
+    this.mostrarMasHoras = !this.mostrarMasHoras;
+    this.actualizarRankings();
+  }
 
-  // toggleSalidas() {
-  //   this.mostrarSalidasTemprano = !this.mostrarSalidasTemprano;
-  //   this.actualizarRankingSalidas();
-  // }
-
-  // toggleHoras() {
-  //   this.mostrarMasHoras = !this.mostrarMasHoras;
-  //   this.actualizarRankingHoras();
-  // }
-
-  // private actualizarRankingEntradas() {
-  //   this.rankingEntradas = this.registroService.obtenerRankingEntradas(this.mostrarEntradasTemprano);
-  // }
-
-  // private actualizarRankingSalidas() {
-  //   this.rankingSalidas = this.registroService.obtenerRankingSalidas(this.mostrarSalidasTemprano);
-  // }
-
-  // private actualizarRankingHoras() {
-  //   this.rankingHoras = this.registroService.obtenerRankingHorasTrabajadas(this.mostrarMasHoras);
-  // }
+  // Helper para formatear
+  formatearHoras(horasDecimal: number): string {
+    return this.registroService.horasDecimalAHHMMSS(horasDecimal);
+  }
 }
