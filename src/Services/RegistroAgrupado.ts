@@ -1,9 +1,7 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 
-// =====================
-// INTERFACES
-// =====================
+
 export interface RegistroCSV {
   User: string;
   WorkId: string;
@@ -75,16 +73,6 @@ export class RegistroProcessorService {
   // =====================
   // MÉTODOS PÚBLICOS
   // =====================
-  
-  // Obtener registros originales sin procesar
-  obtenerRegistrosOriginales(): RegistroCSV[] {
-    return this.registrosOriginales;
-  }
-
-  // Obtener registros agrupados
-  obtenerRegistrosAgrupados(): RegistrosAgrupados {
-    return this.registrosSubject.value;
-  }
 
   // Cargar nuevos registros
   setRegistros(registros: RegistroCSV[]): void {
@@ -100,12 +88,6 @@ export class RegistroProcessorService {
     this.registrosSubject.next(agrupados);
   }
 
-  // Limpiar todos los datos
-  limpiarDatos(): void {
-    this.registrosOriginales = [];
-    this.registrosSubject.next({});
-    localStorage.removeItem(this.KEY);
-  }
 
   // =====================
   // PROCESAMIENTO
@@ -275,7 +257,7 @@ export class RegistroProcessorService {
     const mm = m.toString().padStart(2, '0');
     const ss = s.toString().padStart(2, '0');
     
-    return `${hh}:${mm}:${ss}`;
+    return `${hh}h : ${mm}min : ${ss}seg`;
   }
 
   public horasHHMMSSADecimal(tiempo: string): number {
@@ -349,8 +331,53 @@ export class RegistroProcessorService {
     return resultado.sort((a, b) => a.fecha.localeCompare(b.fecha));
   }
 
-  // Verificar si hay datos cargados
-  hayDatosCargados(): boolean {
-    return this.registrosOriginales.length > 0;
+// Método que calcula todos los promedios en una sola pasada
+  public calcularPromediosHorasTrabajadas(): {
+    porTrabajador: Map<string, { totalHoras: number; dias: number; promedio: string }>;
+    promedioGeneral: string;
+  } {
+    const registros = this.registrosSubject.value;
+    const estadisticasPorTrabajador = new Map<string, { totalHoras: number; dias: number }>();
+    
+    let totalHorasGlobal = 0;
+    let totalDiasGlobal = 0;
+    
+    // Una sola iteración para acumular todo
+    Object.values(registros).forEach(dia => {
+      Object.entries(dia).forEach(([trabajador, datos]) => {
+        // Convertir a decimal una sola vez
+        const horasDecimal = this.horasHHMMSSADecimal(datos.horasTrabajadas);
+        
+        // Acumular por trabajador
+        const stats = estadisticasPorTrabajador.get(trabajador) || { totalHoras: 0, dias: 0 };
+        stats.totalHoras += horasDecimal;
+        stats.dias += 1;
+        estadisticasPorTrabajador.set(trabajador, stats);
+        
+        // Acumular global
+        totalHorasGlobal += horasDecimal;
+        totalDiasGlobal += 1;
+      });
+    });
+    
+    // Calcular promedios y formatear
+    const resultado = new Map<string, { totalHoras: number; dias: number; promedio: string }>();
+    
+    estadisticasPorTrabajador.forEach((stats, trabajador) => {
+      const promedio = stats.dias > 0 ? stats.totalHoras / stats.dias : 0;
+      resultado.set(trabajador, {
+        totalHoras: stats.totalHoras,
+        dias: stats.dias,
+        promedio: this.horasDecimalAHHMMSS(promedio)
+      });
+    });
+    
+    // Promedio general
+    const promedioGeneralDecimal = totalDiasGlobal > 0 ? totalHorasGlobal / totalDiasGlobal : 0;
+    
+    return {
+      porTrabajador: resultado,
+      promedioGeneral: this.horasDecimalAHHMMSS(promedioGeneralDecimal)
+    };
   }
 }
