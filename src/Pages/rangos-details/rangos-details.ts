@@ -27,7 +27,7 @@ interface EstadisticaHoraria {
 export class RangosDetails {
   
   // Estado
-  private periodo: 'hoy' | 'semana' | 'mes' = 'semana';
+  private periodo: 'hoy' | 'semana' | 'mes' | 'siempre' = 'semana';
   private subscription?: Subscription;
   private datosAgrupados: RegistrosAgrupados = {};
   
@@ -45,7 +45,6 @@ export class RangosDetails {
   constructor(private registroService: RegistroProcessorService) {}
 
   ngOnInit() {
-    // Suscribirse a los cambios de registros
     this.subscription = this.registroService.registros$.subscribe(agrupados => {
       this.datosAgrupados = agrupados;
       this.procesarDatos();
@@ -62,7 +61,7 @@ export class RangosDetails {
   // MÉTODOS PÚBLICOS PARA EL TEMPLATE
   // =====================
   
-  cambiarPeriodo(p: 'hoy' | 'semana' | 'mes') {
+  cambiarPeriodo(p: 'hoy' | 'semana' | 'mes' | 'siempre') {
     this.periodo = p;
     this.procesarDatos();
   }
@@ -171,7 +170,7 @@ export class RangosDetails {
         case 'semana':
           const hace7dias = new Date(hoy);
           hace7dias.setDate(hoy.getDate() - 7);
-          return fecha >= hace7dias && fecha <= hoy;
+          return fecha >= hace7dias && fecha <= hoy; 
         
         case 'mes':
           const hace30dias = new Date(hoy);
@@ -229,7 +228,7 @@ export class RangosDetails {
   }
 
   private obtenerRango(hora: string): string {
-    if (!hora) return '00:00 - 00:30';
+    if (!hora) return '00:00 - 00:15';
     
     const [h, m] = hora.split(':').map(Number);
     const minutosTotales = h * 60 + m;
@@ -263,9 +262,6 @@ export class RangosDetails {
       .sort((a, b) => b.cantidad - a.cantidad)
       .slice(0, 5);
       
-      console.log(`stats (${tipo})`, stats);
-      
-
       if (tipo === 'entrada') {
         stats.forEach(element => this._totalEntradas += element.cantidad);
       } else {
