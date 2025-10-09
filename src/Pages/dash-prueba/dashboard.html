@@ -1,6 +1,5 @@
 <div class="min-h-screen bg-gray-100 p-6">
   <div class="max-w-7xl mx-auto">
-    <!-- Header -->
     <div class="mb-8">
       <h1 class="text-3xl font-bold text-gray-900">Dashboard de Control de Horarios</h1>
       <p class="text-gray-600 mt-2">Promedio Horas Trabajadas <p>
@@ -8,9 +7,9 @@
     <div class="bg-white rounded-xl shadow-lg p-6 grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
 
       <div class="bg-gradient-to-br from-blue-100 to-blue-200 rounded-xl p-6 border border-blue-300">
-        <h3 class="text-lg font-semibold text-blue-800 mb-2">Total Trabajadores</h3>
+        <h3 class="text-lg font-semibold text-blue-800 mb-2">Total Registros</h3>
         <p class="text-3xl font-bold text-blue-900">{{ trabajadoresArray.length }}</p>
-        <p class="text-sm text-blue-600 mt-1">Registrados en el sistema</p>
+        <p class="text-sm text-blue-600 mt-1">Registrados en el csv</p>
       </div>
       
       <div class="bg-gradient-to-br from-green-100 to-green-200 rounded-xl p-6 border border-green-300">
@@ -28,10 +27,8 @@
       </div>
     </div>
   </div>
-    <!-- Rankings Grid -->
     <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
       
-      <!-- Top 5 Más/Menos Horas Totales -->
       <div class="bg-white rounded-xl shadow-lg p-6">
         <div class="flex justify-between items-center mb-6">
           <h2 class="text-xl font-bold text-gray-800">
@@ -68,7 +65,6 @@
         </div>
       </div>
 
-      <!-- Top 5 Mayor Promedio Diario -->
       <div class="bg-white rounded-xl shadow-lg p-6">
         <div class="flex justify-between items-center mb-6">
           <h2 class="text-xl font-bold text-gray-800">
@@ -95,7 +91,6 @@
         </div>
       </div>
 
-      <!-- Lista completa con scroll -->
       <div class="bg-white rounded-xl shadow-lg p-6">
         <h2 class="text-xl font-bold text-gray-800 mb-6">
           Todos los Trabajadores ({{ trabajadoresArray.length }})
