@@ -13,6 +13,15 @@ interface DiaCalendario {
   nombreFestivo?:string;
 }
 
+interface SemanaMes {
+  numero: number;
+  diasTrabajados: number;
+  horasTotales: number;
+  promedio: number;
+  fechaInicio: string;
+  fechaFin: string;
+}
+
 interface EstadisticasTrabajador {
   totalHoras: number; 
   totalHorasGeneral: number; 
@@ -65,6 +74,9 @@ export class TrabajadorDetailsComponent {
   ];
 
   anios: number[] = [];
+
+  // Estadisticas semanales
+  semanas: SemanaMes[] = [];
 
   // Contadores
   diasNormales = 0;
@@ -263,7 +275,8 @@ export class TrabajadorDetailsComponent {
       const mesAño = `${fecha.getFullYear()}-${fecha.getMonth()}`;
       mesesUnicos.add(mesAño);
     });
-    
+
+    this.calcularPromediosSemanales();
     return mesesUnicos.size;
   }
 
@@ -528,4 +541,57 @@ private cargarFestivosAño(año: number) {
     return this.festivosPorFecha.get(fecha);
   }
 
+  private calcularPromediosSemanales() {
+    const año = this.mesActual.getFullYear();
+    const mes = this.mesActual.getMonth();
+    
+    // Obtener primer y último día del mes
+    const primerDia = new Date(año, mes, 1);
+    const ultimoDia = new Date(año, mes + 1, 0);
+    
+    this.semanas = [];
+    let numeroSemana = 1;
+    let diaActual = 1;
+    
+    while (diaActual <= ultimoDia.getDate()) {
+      const fechaInicio = new Date(año, mes, diaActual);
+      
+      // Calcular el final de la semana (domingo o fin de mes)
+      let diasEnSemana = 0;
+      let diaFinal = diaActual;
+      
+      while (diaFinal <= ultimoDia.getDate() && diasEnSemana < 7) {
+        diaFinal++;
+        diasEnSemana++;
+      }
+      diaFinal--; // Ajustar porque se pasó un día
+      
+      const fechaFin = new Date(año, mes, diaFinal);
+      
+      // Obtener registros de esta semana
+      const registrosSemana = this.registrosTrabajador.filter(r => {
+        const fechaRegistro = new Date(r.fecha + 'T00:00:00');
+        return fechaRegistro >= fechaInicio && fechaRegistro <= fechaFin;
+      });
+      
+      // Calcular estadísticas de la semana
+      const diasTrabajados = registrosSemana.length;
+      const horasTotales = this.calcularTotalHoras(registrosSemana);
+      const promedio = diasTrabajados > 0 ? horasTotales / diasTrabajados : 0;
+      
+      this.semanas.push({
+        numero: numeroSemana,
+        diasTrabajados,
+        horasTotales,
+        promedio,
+        fechaInicio: `${diaActual}`,
+        fechaFin: `${diaFinal}`
+      });
+      
+      numeroSemana++;
+      diaActual = diaFinal + 1;
+    }
+    
+    console.log('Semanas calculadas:', this.semanas);
+  }
 }
