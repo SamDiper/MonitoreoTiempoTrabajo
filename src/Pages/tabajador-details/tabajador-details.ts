@@ -438,16 +438,23 @@ export class TrabajadorDetailsComponent {
       let horasTrabajadas = '';
       let nombreFestivo: string | undefined;
 
-      // 1) Festivo (prioridad para que se vea como festivo aunque caiga fin de semana)
+      // Festivo
       if (this.esFestivo(fechaStr)) {
         estado = 'festivo';
         nombreFestivo = this.getNombreFestivo(fechaStr);
       }
-      // 2) Fin de semana
+      // Fin de semana
       else if (diaSemana === 0 || diaSemana === 6) {
-        estado = 'finDeSemana';
+
+        const registro = this.registrosTrabajador.find(r => r.fecha === fechaStr);
+        if (registro) {
+          estado = registro.isNovedad ? 'novedad' : 'normal';
+          horasTrabajadas = this.service.horasDecimalAHHMMSS(this.parseHorasTrabajadas(registro.horasTrabajadas) / 60);
+        } else {
+          estado = 'finDeSemana';
+        }
       }
-      // 3) Día hábil -> buscar registro
+      // 3) Día Laboral
       else {
         const registro = this.registrosTrabajador.find(r => r.fecha === fechaStr);
         if (registro) {
