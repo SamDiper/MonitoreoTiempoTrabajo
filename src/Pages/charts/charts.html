@@ -1,1 +1,9 @@
-<p>charts works!</p>
+<div class="bg-white rounded-xl shadow-lg p-6">
+  <canvas #chartCanvas></canvas>
+  
+  @if (semanas.length === 0) {
+    <div class="text-center py-12">
+      <p class="text-gray-500">No hay datos disponibles para mostrar</p>
+    </div>
+  }
+</div>
