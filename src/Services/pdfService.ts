@@ -2,6 +2,7 @@
 import { inject, Injectable } from '@angular/core';
 import pdfMake from 'pdfmake/build/pdfmake';
 import pdfFonts from 'pdfmake/build/vfs_fonts';
+import { chartsService } from './chartsService';
 import { RegistroProcessorService } from './RegistroAgrupado';
 
 pdfMake.vfs = pdfFonts.vfs;
@@ -10,9 +11,10 @@ pdfMake.vfs = pdfFonts.vfs;
   providedIn: 'root'
 })
 export class PdfGeneratorService {
-  service= inject(RegistroProcessorService);
+  service=inject(RegistroProcessorService)
+  constructor(private chartService: chartsService) {}
 
-  generarReporteTrabajador(data: {
+  async generarReporteTrabajador(data: {
     trabajador: string;
     mes: string;
     anio: number;
@@ -23,6 +25,10 @@ export class PdfGeneratorService {
     diasFalta: number;
     diasNovedad: number;
   }) {
+    
+    // Generar gráfico
+    const graficoBase64 = await this.chartService.generarGraficoSemanal(data.semanas);
+
     const docDefinition: any = {
       pageSize: 'A4',
       pageMargins: [40, 60, 40, 60],
@@ -89,28 +95,6 @@ export class PdfGeneratorService {
           margin: [0, 0, 0, 20]
         },
 
-        // Promedios
-        { text: 'Promedios y Estadísticas', style: 'sectionTitle', margin: [0, 20, 0, 10] },
-        {
-          table: {
-            widths: ['*', '*', '*'],
-            body: [
-              [
-                { text: 'Promedio Semanal', style: 'tableHeader' },
-                { text: 'Promedio Mensual', style: 'tableHeader' },
-                { text: 'Meses Trabajados en el Año Actual', style: 'tableHeader' }
-              ],
-              [
-                { text: this.service.horasDecimalAHHMMSS(data.estadisticas.promedioSemanal), style: 'tableCell' },
-                { text: this.service.horasDecimalAHHMMSS(data.estadisticas.promedioMensual), style: 'tableCell' },
-                { text: `${data.estadisticas.mesesTrabajados} ${data.estadisticas.mesesTrabajados === 1 ? 'mes' : 'meses'}`, style: 'tableCell' }
-              ]
-            ]
-          },
-          layout: 'lightHorizontalLines',
-          margin: [0, 0, 0, 20]
-        },
-
         // Asistencias
         { text: 'Resumen de Asistencias', style: 'sectionTitle', margin: [0, 20, 0, 10] },
         {
@@ -135,8 +119,17 @@ export class PdfGeneratorService {
           margin: [0, 0, 0, 20]
         },
 
-        // Promedios por semana
-        { text: 'Promedios por Semana', style: 'sectionTitle', margin: [0, 20, 0, 10], pageBreak: 'before' },
+        // GRÁFICO DE SEMANAS
+        { text: 'Evolución Semanal', style: 'sectionTitle', margin: [0, 20, 0, 10] },
+        {
+          image: graficoBase64,
+          width: 500,
+          alignment: 'center',
+          margin: [0, 0, 0, 20]
+        },
+
+        // Promedios por semana (tabla detallada)
+        { text: 'Detalle por Semana', style: 'sectionTitle', margin: [0, 20, 0, 10], pageBreak: 'before' },
         ...this.generarTablaSemanas(data.semanas)
       ],
 
@@ -184,7 +177,6 @@ export class PdfGeneratorService {
       layout: 'lightHorizontalLines'
     }];
   }
-
 
   private calcularPorcentaje(valor: number, total: number): string {
     return total > 0 ? ((valor / total) * 100).toFixed(1) : '0.0';
