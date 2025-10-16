@@ -114,17 +114,11 @@ export class Login {
       return;
     }
 
-    // Obtener headers
     const headers = lines[0].split(',').map(h => h.trim());
-    console.log('Headers encontrados:', headers);
 
     this.registros = lines.slice(1).map((line, i) => {
-      // Parsear la línea manejando el formato específico con comillas mal balanceadas
       const cols = this.parseSpecialCSVLine(line);
-      console.log(`Línea ${i + 1} parseada:`, cols);
       
-      // Mapear directamente por posición ya que conocemos el orden
-      // User,WorkId,CardNo,Date,Time,IN/OUT,EventCode
       return {
         id: i + 1,
         User: this.cleanValue(cols[0] || ''),
@@ -226,7 +220,7 @@ private cleanValue(value: string): string {
       return;
     }
 
-    if (this.username === 'monitoreo' && this.password === '.') {
+    if (this.username === 'monitoreo' && this.password === 'm0nitor3o.123') {
       try { 
           localStorage.setItem('session', 'active');
           localStorage.setItem('token','ey213mnbkjasnd2131naskjdn2131');

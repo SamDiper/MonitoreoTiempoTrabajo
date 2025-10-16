@@ -13,8 +13,5 @@ export const routes: Routes = [
   { path: 'trabajador', component: TrabajadorDetailsComponent },
   { path: 'trabajador/:nombre', component: TrabajadorDetailsComponent },
   { path: 'rangos', component: RangosDetails },
-  { path: 'charts', component: Charts },
-
-//   { path: 'charts', component: ChartsComponent }
 
 ];

@@ -1,138 +1,165 @@
-import { Component, Input, OnInit, ViewChild, ElementRef, OnChanges, SimpleChanges, OnDestroy } from '@angular/core';
-import { Chart, ChartConfiguration, registerables, PointStyle } from 'chart.js';
+import { Component, Input, OnInit, ViewChild, ElementRef, OnChanges, SimpleChanges, OnDestroy, AfterViewInit } from '@angular/core';
+import { Chart, ChartConfiguration, registerables } from 'chart.js';
 import annotationPlugin from 'chartjs-plugin-annotation';
+import ChartDataLabels from 'chartjs-plugin-datalabels';
 
-Chart.register(...registerables, annotationPlugin);
+Chart.register(...registerables, annotationPlugin, ChartDataLabels);
 
 @Component({
   selector: 'charts',
   templateUrl: './charts.html',
   styleUrl: '../../output.css',
 })
-export class Charts implements OnInit, OnChanges, OnDestroy {
-  @ViewChild('chartCanvas', { static: true }) chartCanvas!: ElementRef<HTMLCanvasElement>;
+export class Charts implements OnInit, OnChanges, OnDestroy, AfterViewInit {
+  @ViewChild('chartCanvas', { static: false }) chartCanvas!: ElementRef<HTMLCanvasElement>;
+  
   @Input() semanas: any[] = [];
+  @Input() registrosTrabajador: any[] = [];
+  @Input() mes: number = 0;
+  @Input() anio: number = 0;
+  @Input() festivosPorFecha: Map<string, string> = new Map();
   
   private chart: Chart | null = null;
-  private promedio: number = 0;
+  private chartPendiente = false;
+
+  // 🎯 Valores especiales para identificar tipo de día
+  private readonly VALOR_FESTIVO = -1;
+  private readonly VALOR_FALTA = -2;
 
   ngOnInit() {
-    this.crearGrafico();
+    console.log('📊 Charts Init');
+  }
+
+  ngAfterViewInit() {
+    console.log('🔵 AfterViewInit - Canvas disponible:', !!this.chartCanvas);
+    if (this.semanas.length > 0 && this.registrosTrabajador.length > 0) {
+      setTimeout(() => {
+        this.crearGrafico();
+      }, 0);
+    } else {
+      this.chartPendiente = true;
+    }
   }
 
   ngOnChanges(changes: SimpleChanges) {
-    if (changes['semanas'] && !changes['semanas'].firstChange) {
-      this.actualizarGrafico();
+    console.log('🔄 ngOnChanges', changes);
+    
+    if (changes['semanas'] || changes['registrosTrabajador']) {
+      if (this.chartCanvas) {
+        this.actualizarGrafico();
+      } else {
+        this.chartPendiente = true;
+      }
     }
   }
 
   crearGrafico() {
-    if (this.semanas.length === 0) return;
+    console.log('🔵 crearGrafico() llamado');
+
+    if (!this.chartCanvas) {
+      console.error('❌ Canvas no disponible todavía');
+      return;
+    }
+
+    if (!this.semanas || this.semanas.length === 0) {
+      console.warn('⚠️ No hay semanas');
+      return;
+    }
+
+    if (!this.registrosTrabajador || this.registrosTrabajador.length === 0) {
+      console.warn('⚠️ No hay registros del trabajador');
+      return;
+    }
 
     const ctx = this.chartCanvas.nativeElement.getContext('2d');
-    if (!ctx) return;
+    if (!ctx) {
+      console.error('❌ No se pudo obtener el contexto del canvas');
+      return;
+    }
 
-    // Calcular promedio general
-    const totalHoras = this.semanas.reduce((sum, s) => sum + s.horasTotales, 0);
-    this.promedio = this.semanas.length > 0 ? totalHoras / this.semanas.length : 0;
-
-    // Preparar datos
-    const labels = this.semanas.map(s => `Semana ${s.numero}`);
-    const horasPorSemana = this.semanas.map(s => s.horasTotales);
-
-    // ⭐ Pre-calcular estilos de los puntos
-    const coloresPuntos = horasPorSemana.map(h => 
-      h >= this.promedio ? '#10b981' : '#ef4444'
-    );
-
-    const estilosPuntos = horasPorSemana.map(h => 
-      h >= this.promedio ? 'circle' : 'triangle'
-    ) as PointStyle[];
-
-    const tamanosPuntos = horasPorSemana.map(h => {
-      const dif = Math.abs(h - this.promedio);
-      const pct = (dif / this.promedio) * 100;
-      if (pct > 20) return 12;
-      if (pct > 10) return 10;
-      return 8;
-    });
+    // ⭐ Preparar datos para barras agrupadas
+    const { labels, datasets } = this.prepararDatosBarrasAgrupadas(ctx);
+    const promedioDiario = this.calcularPromedioDiario();
+    const anotacionesDivisorias = this.crearLineasDivisorias();
+    const rangoEjeY = this.calcularRangoEjeY(datasets, promedioDiario);
 
     const config: ChartConfiguration = {
-      type: 'line',
+      type: 'bar',
       data: {
         labels: labels,
-        datasets: [
-          {
-            label: 'Horas Trabajadas',
-            data: horasPorSemana,
-            borderColor: '#3b82f6',
-            backgroundColor: 'rgba(59, 130, 246, 0.1)',
-            borderWidth: 3,
-            fill: true,
-            tension: 0, // ⭐ Líneas rectas (cambió de 0.4 a 0)
-            
-            // ⭐ Estilos dinámicos
-            pointBackgroundColor: coloresPuntos,
-            pointStyle: estilosPuntos,
-            pointRadius: tamanosPuntos,
-            
-            pointBorderColor: '#ffffff',
-            pointBorderWidth: 2,
-            pointHoverRadius: 10
-          },
-          {
-            label: 'Promedio',
-            data: Array(this.semanas.length).fill(this.promedio),
-            borderColor: '#10b981',
-            backgroundColor: 'transparent',
-            borderWidth: 2,
-            borderDash: [10, 5],
-            pointRadius: 0,
-            fill: false,
-            tension: 0
-          }
-        ]
+        datasets: datasets
       },
       options: {
         responsive: true,
-        maintainAspectRatio: true,
+        maintainAspectRatio: false,
         animation: {
-          duration: 750 // Reducir animación para renderizado más rápido
+          duration: 750
         },
         plugins: {
+          // 🏷️ Plugin para etiquetas en las barras
+          datalabels: {
+            anchor: 'center',
+            align: 'center',
+            rotation: -90,
+            font: {
+              size: 10,
+              weight: 'bold'
+            },
+            color: (context) => {
+              const value = context.dataset.data[context.dataIndex] as number;
+              if (value === this.VALOR_FESTIVO) return '#374151'; // Texto oscuro para festivo
+              if (value === this.VALOR_FALTA) return '#FFFFFF'; // Texto blanco para falta
+              return 'transparent'; // No mostrar en barras normales
+            },
+            formatter: (value) => {
+              if (value === this.VALOR_FESTIVO) return 'FESTIVO';
+              if (value === this.VALOR_FALTA) return 'FALTA';
+              return '';
+            }
+          },
           legend: {
             display: true,
             position: 'top',
             labels: {
-              font: { size: 14, weight: 'bold' },
+              font: { size: 13, weight: 'bold' },
+              padding: 15,
               usePointStyle: true,
-              padding: 20
+              pointStyle: 'circle'
             }
           },
           title: {
             display: true,
-            text: 'Horas Trabajadas por Semana vs Promedio',
+            text: 'Horas Trabajadas por Día y Semana',
             font: { size: 18, weight: 'bold' },
             padding: { top: 10, bottom: 30 }
           },
           tooltip: {
             callbacks: {
               label: (context) => {
-                const label = context.dataset.label || '';
                 const value = context.parsed.y;
                 
-                if (label === 'Promedio') {
-                  return `${label}: ${this.horasDecimalAHHMMSS(Number(value))}`;
+                if (value === this.VALOR_FESTIVO) {
+                  return `${context.dataset.label}: DÍA FESTIVO`;
                 }
-                
-                const diferencia = Number(value) - this.promedio;
-                const porcentaje = ((diferencia / this.promedio) * 100).toFixed(1);
-                
-                return [
-                  `${label}: ${this.horasDecimalAHHMMSS(Number(value))}`,
-                  `Diferencia: ${diferencia >= 0 ? '+' : ''}${this.horasDecimalAHHMMSS(Math.abs(diferencia))}`,
-                  `${diferencia >= 0 ? '↑' : '↓'} ${Math.abs(Number(porcentaje))}% del promedio`
-                ];
+                if (value === this.VALOR_FALTA) {
+                  return `${context.dataset.label}: FALTA`;
+                }
+                if (value === 0) {
+                  return `${context.dataset.label}: Sin registro (0h)`;
+                }
+                return `${context.dataset.label}: ${this.horasDecimalAHHMMSS(Number(value))}`;
+              },
+              afterLabel: (context) => {
+                const value = context.parsed.y;
+                if (value === this.VALOR_FESTIVO || value === this.VALOR_FALTA || value === 0) {
+                  return '';
+                }
+                if (value == null) {
+                  return '';
+                }
+                const diferencia = value - promedioDiario;
+                const signo = diferencia >= 0 ? '+' : '';
+                return `Vs Promedio: ${signo}${this.horasDecimalAHHMMSS(diferencia)}`;
               }
             }
           },
@@ -140,49 +167,60 @@ export class Charts implements OnInit, OnChanges, OnDestroy {
             annotations: {
               promedioLine: {
                 type: 'line',
-                yMin: this.promedio,
-                yMax: this.promedio,
-                borderColor: '#10b981',
-                borderWidth: 2,
+                yMin: promedioDiario,
+                yMax: promedioDiario,
+                borderColor: '#d97706',
+                borderWidth: 3,
                 borderDash: [10, 5],
                 label: {
                   display: true,
-                  content: `Promedio: ${this.horasDecimalAHHMMSS(this.promedio)}`,
+                  content: `Promedio: ${this.horasDecimalAHHMMSS(promedioDiario)}`,
                   position: 'end',
-                  backgroundColor: '#10b981',
+                  backgroundColor: '#d97706',
                   color: 'white',
                   font: { size: 12, weight: 'bold' },
                   padding: 6,
                   borderRadius: 4
                 }
-              }
+              },
+              ...anotacionesDivisorias
             }
           }
         },
         scales: {
           y: {
-            beginAtZero: true,
+            min: rangoEjeY.min,
+            max: rangoEjeY.max,
             title: {
               display: true,
-              text: 'Horas Totales',
+              text: 'Horas Trabajadas',
               font: { size: 14, weight: 'bold' }
             },
             ticks: {
-              callback: (value) => this.horasDecimalAHHMMSS(Number(value)),
-              font: { size: 12 }
+              stepSize: 1,
+              callback: (value) => {
+                // No mostrar valores negativos en el eje
+                if (Number(value) < 0) return '';
+                return this.horasDecimalAHHMMSS(Number(value));
+              },
+              font: { size: 11 }
             },
             grid: {
-              color: 'rgba(0, 0, 0, 0.05)'
+              color: 'rgba(0, 0, 0, 0.08)',
+              lineWidth: 1
             }
           },
           x: {
             title: {
               display: true,
-              text: 'Semanas del Mes',
+              text: 'Días de la Semana por Semana del Mes',
               font: { size: 14, weight: 'bold' }
             },
             ticks: {
-              font: { size: 12 }
+              font: { size: 11, weight: 600 },
+              autoSkip: false,
+              maxRotation: 45,
+              minRotation: 45
             },
             grid: {
               display: false
@@ -192,10 +230,274 @@ export class Charts implements OnInit, OnChanges, OnDestroy {
       }
     };
 
-    this.chart = new Chart(ctx, config);
+    try {
+      this.chart = new Chart(ctx, config);
+    } catch (error) {
+      console.error('❌ Error al crear el gráfico:', error);
+    }
+  }
+
+  // 🎯 CREAR LÍNEAS DIVISORIAS ENTRE SEMANAS
+  private crearLineasDivisorias(): any {
+    const anotaciones: any = {};
+    const diasPorSemana = 5;
+    
+    for (let i = 1; i < this.semanas.length; i++) {
+      const posicion = i * diasPorSemana - 0.5;
+      
+      anotaciones[`divisoria_semana_${i}`] = {
+        type: 'line',
+        xMin: posicion,
+        xMax: posicion,
+        borderColor: '#94a3b8',
+        borderWidth: 2,
+        borderDash: [5, 5],
+        label: {
+          display: false
+        }
+      };
+    }
+    
+    return anotaciones;
+  }
+
+  // ⭐ PREPARAR DATOS CON FESTIVOS Y FALTAS
+  private prepararDatosBarrasAgrupadas(ctx: CanvasRenderingContext2D): { labels: string[], datasets: any[] } {
+    const diasSemana = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie'];
+    const coloresDias = {
+      'Lun': '#3b82f6',
+      'Mar': '#8b5cf6',
+      'Mié': '#ec4899',
+      'Jue': '#f59e0b',
+      'Vie': '#10b981' 
+    };
+
+    // Crear labels para el eje X
+    const labels: string[] = [];
+    this.semanas.forEach(semana => {
+      diasSemana.forEach(dia => {
+        labels.push(`S${semana.numero}-${dia}`);
+      });
+    });
+
+    // Crear datasets (uno por cada día de la semana)
+    const datasets: any[] = [];
+    
+    diasSemana.forEach((dia, diaIndex) => {
+      const dataAjustada: (number | null)[] = [];
+      
+      this.semanas.forEach((semana) => {
+        const registrosSemana = this.obtenerRegistrosDeSemana(semana);
+        const horasPorDia = this.organizarHorasPorDia(registrosSemana, semana);
+        
+        diasSemana.forEach((d, i) => {
+          if (i === diaIndex) {
+            const valor = horasPorDia[i];
+            dataAjustada.push(valor === null ? null : valor);
+          } else {
+            dataAjustada.push(null);
+          }
+        });
+      });
+
+      const color = coloresDias[dia as keyof typeof coloresDias];
+
+      datasets.push({
+        label: dia,
+        data: dataAjustada,
+        backgroundColor: (context: any) => {
+          const value = context.parsed?.y;
+          
+          // 🎨 FESTIVO: Gris transparente
+          if (value === this.VALOR_FESTIVO) {
+            return 'rgba(156, 163, 175, 0.4)'; // Gray-400 con transparencia
+          }
+          
+          // 🔴 FALTA: Rojo transparente
+          if (value === this.VALOR_FALTA) {
+            return 'rgba(239, 68, 68, 0.5)'; // Red-500 con transparencia
+          }
+          
+          // ⚪ Sin registro: Patrón dashed
+          if (value === 0) {
+            return this.crearPatronDashed(ctx, '#94a3b8');
+          }
+          
+          return color;
+        },
+        borderColor: (context: any) => {
+          const value = context.parsed?.y;
+          
+          if (value === this.VALOR_FESTIVO) {
+            return '#6b7280'; // Gray-500
+          }
+          if (value === this.VALOR_FALTA) {
+            return '#dc2626'; // Red-600
+          }
+          if (value === 0) {
+            return '#64748b';
+          }
+          return color;
+        },
+        borderWidth: 2,
+        barPercentage: 3,
+        categoryPercentage: 0.65
+      });
+    });
+
+    return { labels, datasets };
+  }
+
+  private crearPatronDashed(ctx: CanvasRenderingContext2D, color: string): CanvasPattern | string {
+    const patternCanvas = document.createElement('canvas');
+    const patternContext = patternCanvas.getContext('2d');
+    
+    if (!patternContext) return color;
+    
+    patternCanvas.width = 10;
+    patternCanvas.height = 10;
+    
+    patternContext.strokeStyle = color;
+    patternContext.lineWidth = 2;
+    patternContext.beginPath();
+    patternContext.moveTo(0, 10);
+    patternContext.lineTo(10, 0);
+    patternContext.stroke();
+    
+    const pattern = ctx.createPattern(patternCanvas, 'repeat');
+    return pattern || color;
+  }
+
+  // 🔍 Determinar tipo de día
+  private determinarTipoDia(fecha: Date): 'festivo' | 'falta' | 'normal' {
+    const fechaStr = fecha.toISOString().split('T')[0];
+    
+    // Verificar si es festivo
+    if (this.festivosPorFecha.has(fechaStr)) {
+      return 'festivo';
+    }
+    
+    // Si no hay registro y no es festivo, es falta
+    return 'falta';
+  }
+
+  private obtenerRegistrosDeSemana(semana: any): any[] {
+    const parsearFecha = (fechaStr: string) => {
+      if (fechaStr.includes('/')) {
+        return parseInt(fechaStr.split('/')[0]);
+      }
+      return parseInt(fechaStr);
+    };
+
+    const diaInicio = parsearFecha(semana.fechaInicio);
+    const diaFin = parsearFecha(semana.fechaFin);
+    
+    const inicioSemana = new Date(this.anio, this.mes, diaInicio);
+    const finSemana = new Date(this.anio, this.mes, diaFin);
+    
+    return this.registrosTrabajador.filter(r => {
+      const fechaRegistro = new Date(r.fecha + 'T00:00:00');
+      return fechaRegistro >= inicioSemana && fechaRegistro <= finSemana;
+    });
+  }
+
+  private organizarHorasPorDia(registros: any[], semana: any): (number | null)[] {
+    const horasPorDia: (number | null)[] = [null, null, null, null, null];
+    
+    const primerDiaMes = new Date(this.anio, this.mes, 1);
+    const ultimoDiaMes = new Date(this.anio, this.mes + 1, 0);
+    
+    const parsearFecha = (fechaStr: string) => {
+      if (fechaStr.includes('/')) {
+        return parseInt(fechaStr.split('/')[0]);
+      }
+      return parseInt(fechaStr);
+    };
+    
+    const diaInicio = parsearFecha(semana.fechaInicio);
+    const diaFin = parsearFecha(semana.fechaFin);
+    
+    for (let dia = diaInicio; dia <= diaFin; dia++) {
+      const fechaDia = new Date(this.anio, this.mes, dia);
+      const diaSemana = fechaDia.getDay();
+      
+      if (diaSemana >= 1 && diaSemana <= 5) {
+        const indice = diaSemana - 1;
+        
+        if (fechaDia >= primerDiaMes && fechaDia <= ultimoDiaMes) {
+          const registro = registros.find(r => {
+            const fechaRegistro = new Date(r.fecha + 'T00:00:00');
+            return fechaRegistro.getDate() === dia && 
+                   fechaRegistro.getMonth() === this.mes && 
+                   fechaRegistro.getFullYear() === this.anio;
+          });
+          
+          if (registro) {
+            const horas = this.parseHorasTrabajadas(registro.horasTrabajadas);
+            horasPorDia[indice] = horas;
+          } else {
+            // 🎯 Determinar si es festivo o falta
+            const tipoDia = this.determinarTipoDia(fechaDia);
+            
+            if (tipoDia === 'festivo') {
+              horasPorDia[indice] = this.VALOR_FESTIVO;
+            } else if (tipoDia === 'falta') {
+              horasPorDia[indice] = this.VALOR_FALTA;
+            } else {
+              horasPorDia[indice] = 0;
+            }
+          }
+        }
+      }
+    }
+    
+    return horasPorDia;
+  }
+
+  private parseHorasTrabajadas(horasStr: string): number {
+    const match = horasStr.match(/(\d+)h\s*:\s*(\d+)min\s*:\s*(\d+)seg/);
+    
+    if (match) {
+      const horas = parseInt(match[1]);
+      const minutos = parseInt(match[2]);
+      const segundos = parseInt(match[3]);
+      return horas + (minutos / 60) + (segundos / 3600);
+    }
+    
+    return 0;
+  }
+
+  private calcularPromedioDiario(): number {
+    return 8.5;
+  }
+
+  private calcularRangoEjeY(datasets: any[], promedioDiario: number): { min: number, max: number } {
+    let maxHoras = -Infinity;
+
+    datasets.forEach(dataset => {
+      dataset.data.forEach((horas: any) => {
+        // Solo contar valores positivos para el rango
+        if (horas !== null && horas !== undefined && horas > 0) {
+          maxHoras = Math.max(maxHoras, horas);
+        }
+      });
+    });
+
+    if (maxHoras === -Infinity) {
+      return { min: -2.5, max: 10 }; // Espacio para FESTIVO y FALTA
+    }
+
+    maxHoras = Math.max(maxHoras, promedioDiario);
+    const padding = maxHoras * 0.15;
+
+    return {
+      min: -2.5, // 👈 Espacio negativo para mostrar FESTIVO y FALTA
+      max: maxHoras + padding
+    };
   }
 
   actualizarGrafico() {
+    console.log('🔄 Actualizando gráfico');
     if (this.chart) {
       this.chart.destroy();
     }
@@ -203,112 +505,52 @@ export class Charts implements OnInit, OnChanges, OnDestroy {
   }
 
   private horasDecimalAHHMMSS(horas: number): string {
-    const h = Math.floor(horas);
-    const m = Math.floor((horas - h) * 60);
-    return `${h}h ${m}m`;
+    const h = Math.floor(Math.abs(horas));
+    const m = Math.floor((Math.abs(horas) - h) * 60);
+    const signo = horas < 0 ? '-' : '';
+    return `${signo}${h}h ${m}m`;
   }
 
-  // ⭐ Método SINCRÓNICO (simple, para uso inmediato)
-  public getChartImage(): string {
-    if (this.chart) {
-      try {
-        const image = this.chart.toBase64Image('image/png', 1.0);
-        
-        // Validar que la imagen no esté vacía
-        if (!image || image === 'data:,' || image.length < 100) {
-          console.error('Imagen del gráfico vacía o inválida');
-          return '';
-        }
-        
-        console.log('✅ Imagen generada correctamente:', image.substring(0, 50) + '...');
-        return image;
-      } catch (error) {
-        console.error('Error al generar imagen del gráfico:', error);
-        return '';
-      }
-    }
-    console.warn('No hay gráfico disponible para convertir a imagen');
-    return '';
-  }
-
-  // ⭐ Método ASÍNCRONO (mejor para PDF, espera renderizado completo)
-  public async getChartImageAsync(): Promise<string> {
-    return new Promise((resolve) => {
-      if (!this.chart) {
-        console.warn('No hay gráfico disponible');
-        resolve('');
-        return;
-      }
-
-      // Esperar a que el gráfico termine de renderizarse
-      setTimeout(() => {
-        try {
-          const image = this.chart!.toBase64Image('image/png', 1.0);
-          
-          // Validar imagen
-          if (!image || image === 'data:,' || image.length < 100) {
-            console.error('Imagen del gráfico vacía o inválida');
-            resolve('');
-            return;
-          }
-          
-          console.log('✅ Imagen async generada correctamente:', image.substring(0, 50) + '...');
-          resolve(image);
-        } catch (error) {
-          console.error('Error al generar imagen del gráfico:', error);
-          resolve('');
-        }
-      }, 500); // Esperar medio segundo para asegurar renderizado completo
-    });
-  }
-
-  // ⭐ Método para forzar renderizado sin animación (ideal para PDF)
   public async getChartImageForPDF(): Promise<string> {
     if (!this.chart) {
-      console.warn('No hay gráfico disponible');
+      console.warn('⚠️ Chart no disponible para PDF');
       return '';
     }
 
     return new Promise((resolve) => {
-      // Deshabilitar animaciones temporalmente
       const wasAnimated = this.chart!.options.animation;
+      
       if (this.chart!.options.animation) {
         this.chart!.options.animation = false;
       }
 
-      // Forzar actualización
       this.chart!.update('none');
 
-      // Esperar un tick
       setTimeout(() => {
         try {
           const image = this.chart!.toBase64Image('image/png', 1.0);
           
-          // Restaurar animaciones
           if (wasAnimated) {
             this.chart!.options.animation = wasAnimated;
           }
 
-          // Validar imagen
           if (!image || image === 'data:,' || image.length < 100) {
-            console.error('Imagen del gráfico vacía o inválida');
+            console.error('❌ Imagen PDF vacía o inválida');
             resolve('');
             return;
           }
           
-          console.log('✅ Imagen PDF generada:', image.substring(0, 50) + '...');
+          console.log('✅ Imagen para PDF generada correctamente');
           resolve(image);
         } catch (error) {
-          console.error('Error al generar imagen para PDF:', error);
+          console.error('❌ Error al generar imagen para PDF:', error);
           
-          // Restaurar animaciones en caso de error
           if (wasAnimated) {
             this.chart!.options.animation = wasAnimated;
           }
-          
           resolve('');
         }
-      }, 100);
+      }, 500);
     });
   }
 

@@ -233,22 +233,17 @@ export class TrabajadorDetailsComponent {
 
     // ======== NUEVOS CÁLCULOS GENERALES ========
     
-    // Calcular total de horas GENERALES (todos los registros)
     const totalHorasGeneral = this.calcularTotalHoras(this.registrosTrabajador);
     
-    // Calcular meses trabajados
     const mesesTrabajados = this.calcularMesesTrabajados(this.registrosTrabajador);
     
-    // Calcular promedio mensual real
     const promedioMensualReal = mesesTrabajados > 0 ? totalHorasGeneral / mesesTrabajados : 0;
 
-    // ======== CÁLCULOS DEL MES ACTUAL ========
     
     const totalHorasMesActual = this.calcularTotalHoras(registrosDelMes);
     
     const diasLaborables = this.calcularDiasLaborables(año, mes);
     
-    // Calcular asistencias
     const diasTrabajados = registrosDelMes.length;
     const diasFaltados = diasLaborables - diasTrabajados;
     const diasConNovedad = registrosDelMes.filter(r => r.isNovedad).length;
@@ -291,7 +286,7 @@ export class TrabajadorDetailsComponent {
       totalMinutos += minutos;
     });
     
-    return totalMinutos / 60; // Convertir a horas
+    return totalMinutos / 60;
   }
 
   private parseHorasTrabajadas(horasStr: string): number {
@@ -555,7 +550,6 @@ private cargarFestivosAño(año: number) {
     const año = this.mesActual.getFullYear();
     const mes = this.mesActual.getMonth();
     
-    // Obtener primer y último día del mes
     const primerDia = new Date(año, mes, 1);
     const ultimoDia = new Date(año, mes + 1, 0);
     
@@ -563,55 +557,43 @@ private cargarFestivosAño(año: number) {
     let numeroSemana = 1;
     let totalHorasTodasLasSemanas = 0;
     
-    // Empezar desde el primer día del mes
     let fechaActual = new Date(primerDia);
     
     while (fechaActual <= ultimoDia) {
-      // Calcular inicio de la semana (puede ser el día actual o el lunes de esa semana)
       let inicioSemana = new Date(fechaActual);
       
-      // Si no es lunes (1) y no es la primera semana, retroceder al lunes
       if (fechaActual.getDay() !== 1 && numeroSemana > 1) {
-        // Retroceder al lunes de esta semana
         const diasHastaLunes = fechaActual.getDay() === 0 ? 6 : fechaActual.getDay() - 1;
         inicioSemana = new Date(fechaActual);
         inicioSemana.setDate(fechaActual.getDate() - diasHastaLunes);
       }
       
-      // Si el inicio calculado es antes del primer día del mes, ajustar
       if (inicioSemana < primerDia) {
         inicioSemana = new Date(primerDia);
       }
       
-      // Calcular fin de la semana (domingo o último día del mes)
       let finSemana = new Date(inicioSemana);
       const diasHastaDomingo = inicioSemana.getDay() === 0 ? 0 : 7 - inicioSemana.getDay();
       finSemana.setDate(inicioSemana.getDate() + diasHastaDomingo);
       
-      // Si el fin es después del último día del mes, ajustar
       if (finSemana > ultimoDia) {
         finSemana = new Date(ultimoDia);
       }
       
-      // Obtener registros de esta semana
       const registrosSemana = this.registrosTrabajador.filter(r => {
         const fechaRegistro = new Date(r.fecha + 'T00:00:00');
         return fechaRegistro >= inicioSemana && fechaRegistro <= finSemana;
       });
       
-      // Calcular estadísticas de la semana
       const diasTrabajados = registrosSemana.length;
       const horasTotales = this.calcularTotalHoras(registrosSemana);
-      totalHorasTodasLasSemanas += horasTotales;
       const promedio = diasTrabajados > 0 ? horasTotales / diasTrabajados : 0;
       
-      // Formatear fechas para mostrar
       const diaInicio = inicioSemana.getDate();
       const diaFin = finSemana.getDate();
       const mesInicio = inicioSemana.getMonth();
       const mesFin = finSemana.getMonth();
       
-      // Si cruza meses, mostrar el mes también
       let fechaInicioStr = `${diaInicio}`;
       let fechaFinStr = `${diaFin}`;
       
@@ -622,18 +604,21 @@ private cargarFestivosAño(año: number) {
         fechaFinStr = `${diaFin}/${mesFin + 1}`;
       }
       
-      this.semanas.push({
-        numero: numeroSemana,
-        diasTrabajados,
-        horasTotales,
-        promedio,
-        fechaInicio: fechaInicioStr,
-        fechaFin: fechaFinStr,
-      });
+      if (horasTotales > 0) {
+        totalHorasTodasLasSemanas += horasTotales;
+        
+        this.semanas.push({
+          numero: numeroSemana,
+          diasTrabajados,
+          horasTotales,
+          promedio,
+          fechaInicio: fechaInicioStr,
+          fechaFin: fechaFinStr,
+        });
+        
+        numeroSemana++;
+      }
       
-      numeroSemana++;
-      
-      // Avanzar al día siguiente después del fin de esta semana
       fechaActual = new Date(finSemana);
       fechaActual.setDate(fechaActual.getDate() + 1);
     }
@@ -644,20 +629,26 @@ private cargarFestivosAño(año: number) {
     console.log('Semanas calculadas:', this.semanas);
   }
 
-    descargarPDF() {
-    this.pdfService.generarReporteTrabajador({
-      trabajador: this.trabajadorSeleccionado,
-      mes: this.meses[this.mesSeleccionado],
-      anio: this.anioSeleccionado,
-      estadisticas: this.estadisticas,
-      diasCalendario: this.diasCalendario,
-      semanas: this.semanas,
-      diasNormales: this.diasNormales,
-      diasFalta: this.diasFalta,
-      diasNovedad: this.diasNovedad
-    });
+  async descargarPDF() {
+    try {
 
-
+      await this.pdfService.generarReporteTrabajador({
+        trabajador: this.trabajadorSeleccionado,
+        mes: this.meses[this.mesSeleccionado],
+        anio: this.anioSeleccionado,
+        estadisticas: this.estadisticas,
+        diasCalendario: this.diasCalendario,
+        semanas: this.semanas,
+        diasNormales: this.diasNormales,
+        diasFalta: this.diasFalta,
+        diasNovedad: this.diasNovedad,
+        registrosTrabajador: this.registrosTrabajador, 
+        mes_numero: this.mesSeleccionado, 
+      });
+    } catch (error) {
+      console.error('Error al generar PDF:', error);
+      alert('Error al generar el PDF');
+    }
   }
   
 }
