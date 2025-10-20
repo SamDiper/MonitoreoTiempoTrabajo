@@ -222,7 +222,7 @@ export class Charts implements OnChanges, OnDestroy, AfterViewInit {
     try {
       this.chart = new Chart(ctx, config);
     } catch (error) {
-      alert('❌ Error al crear el gráfico:', error);
+      alert(`❌ Error al crear el gráfico: ${error}`);
     }
   }
 
