@@ -145,7 +145,6 @@ export class RangosDetails {
         datosFiltrados[fecha] = this.datosAgrupados[fecha];
       }
     });
-    console.log(datosFiltrados);
     
     // Calcular estadísticas
     this.calcularTotales(datosFiltrados);

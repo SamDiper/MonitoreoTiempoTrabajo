@@ -27,8 +27,7 @@ estadisticasGenerales: any = {};
 
   ngOnInit() {
     this.cargarEstadisticas();
-    console.log('horas: ',this.rankingMasHoras);
-    console.log('promedio: ', this.rankingMasPromedio);
+
   }
 
   cargarEstadisticas() {

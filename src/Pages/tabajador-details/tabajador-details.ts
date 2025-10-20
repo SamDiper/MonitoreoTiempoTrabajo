@@ -209,7 +209,6 @@ export class TrabajadorDetailsComponent {
     this.calcularEstadisticas();
     this.generarCalendario();
     this.calcularContadores();
-    console.log('registros trabajador',this.registrosTrabajador);
     
     
   }
@@ -262,7 +261,6 @@ export class TrabajadorDetailsComponent {
       mesesTrabajados: mesesTrabajados
     };
 
-    console.log('estadistica ', this.estadisticas);
   }
 
   private calcularMesesTrabajados(registros: RegistroTrabajador[]): number {
@@ -490,7 +488,6 @@ export class TrabajadorDetailsComponent {
     this.diasFalta=0;
     this.diasNormales=0;
     this.diasNovedad=0;
-    console.log('registros del mes',registrosDelMes);
     
     registrosDelMes.forEach(element => {
       if(element.isNovedad==true){        
@@ -626,7 +623,6 @@ private cargarFestivosAño(año: number) {
     this.promedioGlobal = this.semanas.length > 0 ? 
       totalHorasTodasLasSemanas / this.semanas.length : 0;
     
-    console.log('Semanas calculadas:', this.semanas);
   }
 
   async descargarPDF() {
@@ -646,7 +642,6 @@ private cargarFestivosAño(año: number) {
         mes_numero: this.mesSeleccionado, 
       });
     } catch (error) {
-      console.error('Error al generar PDF:', error);
       alert('Error al generar el PDF');
     }
   }

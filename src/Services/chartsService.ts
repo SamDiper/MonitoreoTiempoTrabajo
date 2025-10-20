@@ -23,17 +23,14 @@ export class ChartService {
   ): Promise<string> {
     return new Promise((resolve, reject) => {
       try {
-        console.log('📊 Iniciando generación de gráfico para PDF...');
-        console.log('🎄 Festivos recibidos en service:', festivosPorFecha);
-
         if (!semanas || semanas.length === 0) {
-          console.warn('⚠️ No hay semanas para graficar');
+          alert('⚠️ No hay semanas para graficar');
           resolve('');
           return;
         }
 
         if (!registrosTrabajador || registrosTrabajador.length === 0) {
-          console.warn('⚠️ No hay registros para graficar');
+          alert('⚠️ No hay registros para graficar');
           resolve('');
           return;
         }
@@ -191,19 +188,15 @@ export class ChartService {
             const imageBase64 = canvas.toDataURL('image/png', 1.0);
             
             if (!imageBase64 || imageBase64 === 'data:,' || imageBase64 === 'data:image/png;base64,') {
-              console.error('❌ La imagen generada está vacía');
               chart.destroy();
               document.body.removeChild(canvas);
               reject('Error al generar la imagen del gráfico');
             } else {
-              console.log('✅ Gráfico para PDF generado correctamente');
-              console.log(`📏 Tamaño de imagen: ${(imageBase64.length / 1024).toFixed(2)} KB`);
               chart.destroy();
               document.body.removeChild(canvas);
               resolve(imageBase64);
             }
           } catch (error) {
-            console.error('❌ Error al convertir canvas a imagen:', error);
             chart.destroy();
             document.body.removeChild(canvas);
             reject(error);
@@ -211,13 +204,11 @@ export class ChartService {
         }, 1000);
 
       } catch (error) {
-        console.error('❌ Error en generarGraficoSemanal:', error);
         reject(error);
       }
     });
   }
 
-  // 🎨 Crear patrón de líneas diagonales
   private crearPatronDashed(ctx: CanvasRenderingContext2D, color: string): CanvasPattern | string {
     const patternCanvas = document.createElement('canvas');
     const patternContext = patternCanvas.getContext('2d');
@@ -265,7 +256,6 @@ export class ChartService {
   // 🔍 Determinar tipo de día
   private determinarTipoDia(fecha: Date, festivosPorFecha?: Map<string, string>): 'festivo' | 'falta' | 'normal' {
     if (!festivosPorFecha) {
-      console.log('⚠️ No hay mapa de festivos');
       return 'falta';
     }
     
@@ -275,17 +265,14 @@ export class ChartService {
     const day = String(fecha.getDate()).padStart(2, '0');
     const fechaStr = `${year}-${month}-${day}`;
     
-    console.log(`🔍 [Service] Verificando fecha: ${fechaStr}`);
     
     // Verificar si es festivo
     if (festivosPorFecha.has(fechaStr)) {
       const nombreFestivo = festivosPorFecha.get(fechaStr);
-      console.log(`🎄 [Service] FESTIVO encontrado: ${fechaStr} - ${nombreFestivo}`);
       return 'festivo';
     }
     
     // Si no hay registro y no es festivo, es falta
-    console.log(`❌ [Service] FALTA: ${fechaStr}`);
     return 'falta';
   }
 

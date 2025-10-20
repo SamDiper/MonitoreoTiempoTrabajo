@@ -92,7 +92,6 @@ export class Login {
           this.selectedFile = undefined;
         }
       } catch (err) {
-        console.error('Error leyendo Excel:', err);
         this.fileError = 'No se pudo leer el archivo Excel';
         this.selectedFile = undefined;
       }
@@ -131,7 +130,6 @@ export class Login {
       } as Registro;
     });
 
-    console.log('Registros procesados:', this.registros);
     this.registrosService.setRegistros(this.registros);
     
     if (this.registros.length === 0) {
@@ -139,7 +137,6 @@ export class Login {
       this.selectedFile = undefined;
     }
   } catch (e) {
-    console.error('Error leyendo CSV:', e);
     this.fileError = 'No se pudo leer el CSV';
     this.selectedFile = undefined;
   }

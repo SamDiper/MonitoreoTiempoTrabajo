@@ -32,10 +32,8 @@ export class FestivosService {
     return this.http.get<Festivo[]>(`${this.apiUrl}/${año}/CO`).pipe(
       tap(festivos => {
         this.festivosCache.set(año, festivos);
-        console.log(`Festivos ${año} cargados:`, festivos);
       }),
       catchError(error => {
-        console.error('Error obteniendo festivos:', error);
         return of([]);
       })
     );

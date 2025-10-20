@@ -1,4 +1,4 @@
-import { Component, Input, OnInit, ViewChild, ElementRef, OnChanges, SimpleChanges, OnDestroy, AfterViewInit } from '@angular/core';
+import { Component, Input, ViewChild, ElementRef, OnChanges, SimpleChanges, OnDestroy, AfterViewInit } from '@angular/core';
 import { Chart, ChartConfiguration, registerables } from 'chart.js';
 import annotationPlugin from 'chartjs-plugin-annotation';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
@@ -10,7 +10,7 @@ Chart.register(...registerables, annotationPlugin, ChartDataLabels);
   templateUrl: './charts.html',
   styleUrl: '../../output.css',
 })
-export class Charts implements OnInit, OnChanges, OnDestroy, AfterViewInit {
+export class Charts implements OnChanges, OnDestroy, AfterViewInit {
   @ViewChild('chartCanvas', { static: false }) chartCanvas!: ElementRef<HTMLCanvasElement>;
   
   @Input() semanas: any[] = [];
@@ -22,16 +22,10 @@ export class Charts implements OnInit, OnChanges, OnDestroy, AfterViewInit {
   private chart: Chart | null = null;
   private chartPendiente = false;
 
-  // 🎯 Valores especiales para identificar tipo de día
   private readonly VALOR_FESTIVO = -1;
   private readonly VALOR_FALTA = -2;
 
-  ngOnInit() {
-    console.log('📊 Charts Init');
-  }
-
   ngAfterViewInit() {
-    console.log('🔵 AfterViewInit - Canvas disponible:', !!this.chartCanvas);
     if (this.semanas.length > 0 && this.registrosTrabajador.length > 0) {
       setTimeout(() => {
         this.crearGrafico();
@@ -42,7 +36,6 @@ export class Charts implements OnInit, OnChanges, OnDestroy, AfterViewInit {
   }
 
   ngOnChanges(changes: SimpleChanges) {
-    console.log('🔄 ngOnChanges', changes);
     
     if (changes['semanas'] || changes['registrosTrabajador']) {
       if (this.chartCanvas) {
@@ -54,30 +47,28 @@ export class Charts implements OnInit, OnChanges, OnDestroy, AfterViewInit {
   }
 
   crearGrafico() {
-    console.log('🔵 crearGrafico() llamado');
 
     if (!this.chartCanvas) {
-      console.error('❌ Canvas no disponible todavía');
+      alert('❌ Canvas no disponible todavía');
       return;
     }
 
     if (!this.semanas || this.semanas.length === 0) {
-      console.warn('⚠️ No hay semanas');
+      alert('⚠️ No hay semanas');
       return;
     }
 
     if (!this.registrosTrabajador || this.registrosTrabajador.length === 0) {
-      console.warn('⚠️ No hay registros del trabajador');
+      alert('⚠️ No hay registros del trabajador');
       return;
     }
 
     const ctx = this.chartCanvas.nativeElement.getContext('2d');
     if (!ctx) {
-      console.error('❌ No se pudo obtener el contexto del canvas');
+      alert('❌ No se pudo obtener el contexto del canvas');
       return;
     }
 
-    // ⭐ Preparar datos para barras agrupadas
     const { labels, datasets } = this.prepararDatosBarrasAgrupadas(ctx);
     const promedioDiario = this.calcularPromedioDiario();
     const anotacionesDivisorias = this.crearLineasDivisorias();
@@ -96,7 +87,6 @@ export class Charts implements OnInit, OnChanges, OnDestroy, AfterViewInit {
           duration: 750
         },
         plugins: {
-          // 🏷️ Plugin para etiquetas en las barras
           datalabels: {
             anchor: 'center',
             align: 'center',
@@ -107,9 +97,9 @@ export class Charts implements OnInit, OnChanges, OnDestroy, AfterViewInit {
             },
             color: (context) => {
               const value = context.dataset.data[context.dataIndex] as number;
-              if (value === this.VALOR_FESTIVO) return '#374151'; // Texto oscuro para festivo
-              if (value === this.VALOR_FALTA) return '#FFFFFF'; // Texto blanco para falta
-              return 'transparent'; // No mostrar en barras normales
+              if (value === this.VALOR_FESTIVO) return '#374151'; 
+              if (value === this.VALOR_FALTA) return '#FFFFFF';
+              return 'transparent';
             },
             formatter: (value) => {
               if (value === this.VALOR_FESTIVO) return 'FESTIVO';
@@ -199,7 +189,6 @@ export class Charts implements OnInit, OnChanges, OnDestroy, AfterViewInit {
             ticks: {
               stepSize: 1,
               callback: (value) => {
-                // No mostrar valores negativos en el eje
                 if (Number(value) < 0) return '';
                 return this.horasDecimalAHHMMSS(Number(value));
               },
@@ -233,11 +222,10 @@ export class Charts implements OnInit, OnChanges, OnDestroy, AfterViewInit {
     try {
       this.chart = new Chart(ctx, config);
     } catch (error) {
-      console.error('❌ Error al crear el gráfico:', error);
+      alert('❌ Error al crear el gráfico:', error);
     }
   }
 
-  // 🎯 CREAR LÍNEAS DIVISORIAS ENTRE SEMANAS
   private crearLineasDivisorias(): any {
     const anotaciones: any = {};
     const diasPorSemana = 5;
@@ -261,7 +249,6 @@ export class Charts implements OnInit, OnChanges, OnDestroy, AfterViewInit {
     return anotaciones;
   }
 
-  // ⭐ PREPARAR DATOS CON FESTIVOS Y FALTAS
   private prepararDatosBarrasAgrupadas(ctx: CanvasRenderingContext2D): { labels: string[], datasets: any[] } {
     const diasSemana = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie'];
     const coloresDias = {
@@ -272,7 +259,6 @@ export class Charts implements OnInit, OnChanges, OnDestroy, AfterViewInit {
       'Vie': '#10b981' 
     };
 
-    // Crear labels para el eje X
     const labels: string[] = [];
     this.semanas.forEach(semana => {
       diasSemana.forEach(dia => {
@@ -280,7 +266,6 @@ export class Charts implements OnInit, OnChanges, OnDestroy, AfterViewInit {
       });
     });
 
-    // Crear datasets (uno por cada día de la semana)
     const datasets: any[] = [];
     
     diasSemana.forEach((dia, diaIndex) => {
@@ -308,17 +293,14 @@ export class Charts implements OnInit, OnChanges, OnDestroy, AfterViewInit {
         backgroundColor: (context: any) => {
           const value = context.parsed?.y;
           
-          // 🎨 FESTIVO: Gris transparente
           if (value === this.VALOR_FESTIVO) {
-            return 'rgba(156, 163, 175, 0.4)'; // Gray-400 con transparencia
+            return 'rgba(156, 163, 175, 0.4)'; 
           }
           
-          // 🔴 FALTA: Rojo transparente
           if (value === this.VALOR_FALTA) {
-            return 'rgba(239, 68, 68, 0.5)'; // Red-500 con transparencia
+            return 'rgba(239, 68, 68, 0.5)'; 
           }
           
-          // ⚪ Sin registro: Patrón dashed
           if (value === 0) {
             return this.crearPatronDashed(ctx, '#94a3b8');
           }
@@ -329,10 +311,10 @@ export class Charts implements OnInit, OnChanges, OnDestroy, AfterViewInit {
           const value = context.parsed?.y;
           
           if (value === this.VALOR_FESTIVO) {
-            return '#6b7280'; // Gray-500
+            return '#6b7280'; 
           }
           if (value === this.VALOR_FALTA) {
-            return '#dc2626'; // Red-600
+            return '#dc2626';
           }
           if (value === 0) {
             return '#64748b';
@@ -368,16 +350,13 @@ export class Charts implements OnInit, OnChanges, OnDestroy, AfterViewInit {
     return pattern || color;
   }
 
-  // 🔍 Determinar tipo de día
   private determinarTipoDia(fecha: Date): 'festivo' | 'falta' | 'normal' {
     const fechaStr = fecha.toISOString().split('T')[0];
     
-    // Verificar si es festivo
     if (this.festivosPorFecha.has(fechaStr)) {
       return 'festivo';
     }
     
-    // Si no hay registro y no es festivo, es falta
     return 'falta';
   }
 
@@ -436,7 +415,6 @@ export class Charts implements OnInit, OnChanges, OnDestroy, AfterViewInit {
             const horas = this.parseHorasTrabajadas(registro.horasTrabajadas);
             horasPorDia[indice] = horas;
           } else {
-            // 🎯 Determinar si es festivo o falta
             const tipoDia = this.determinarTipoDia(fechaDia);
             
             if (tipoDia === 'festivo') {
@@ -476,7 +454,6 @@ export class Charts implements OnInit, OnChanges, OnDestroy, AfterViewInit {
 
     datasets.forEach(dataset => {
       dataset.data.forEach((horas: any) => {
-        // Solo contar valores positivos para el rango
         if (horas !== null && horas !== undefined && horas > 0) {
           maxHoras = Math.max(maxHoras, horas);
         }
@@ -484,20 +461,19 @@ export class Charts implements OnInit, OnChanges, OnDestroy, AfterViewInit {
     });
 
     if (maxHoras === -Infinity) {
-      return { min: -2.5, max: 10 }; // Espacio para FESTIVO y FALTA
+      return { min: -2.5, max: 10 }; 
     }
 
     maxHoras = Math.max(maxHoras, promedioDiario);
     const padding = maxHoras * 0.15;
 
     return {
-      min: -2.5, // 👈 Espacio negativo para mostrar FESTIVO y FALTA
+      min: -2.5,
       max: maxHoras + padding
     };
   }
 
   actualizarGrafico() {
-    console.log('🔄 Actualizando gráfico');
     if (this.chart) {
       this.chart.destroy();
     }
@@ -513,7 +489,7 @@ export class Charts implements OnInit, OnChanges, OnDestroy, AfterViewInit {
 
   public async getChartImageForPDF(): Promise<string> {
     if (!this.chart) {
-      console.warn('⚠️ Chart no disponible para PDF');
+      alert('⚠️ Chart no disponible para PDF');
       return '';
     }
 
@@ -535,16 +511,14 @@ export class Charts implements OnInit, OnChanges, OnDestroy, AfterViewInit {
           }
 
           if (!image || image === 'data:,' || image.length < 100) {
-            console.error('❌ Imagen PDF vacía o inválida');
+            alert('❌ Imagen PDF vacía o inválida');
             resolve('');
             return;
           }
           
-          console.log('✅ Imagen para PDF generada correctamente');
           resolve(image);
         } catch (error) {
-          console.error('❌ Error al generar imagen para PDF:', error);
-          
+            alert(`❌ Error al generar imagen para PDF: ${error}`);
           if (wasAnimated) {
             this.chart!.options.animation = wasAnimated;
           }

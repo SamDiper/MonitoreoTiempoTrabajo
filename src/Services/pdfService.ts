@@ -33,14 +33,11 @@ export class PdfGeneratorService {
   }) {
     
     try {
-      console.log('📄 Iniciando generación de PDF...');
       
-      // 🎯 Generar gráfico con el servicio actualizado
       let graficoBase64 = '';
       if (data.semanas && data.semanas.length > 0 && 
           data.registrosTrabajador && data.mes_numero !== undefined) {
         
-        console.log('📊 Generando gráfico semanal...');
         graficoBase64 = await this.chartService.generarGraficoSemanal(
           data.semanas,
           data.registrosTrabajador,
@@ -48,17 +45,11 @@ export class PdfGeneratorService {
           data.anio
         );
         
-        if (graficoBase64 && graficoBase64.length > 100) {
-          console.log('✅ Gráfico generado correctamente');
-        } else {
-          console.warn('⚠️ El gráfico no se generó correctamente');
-        }
       }
 
-      // 📅 Generar calendario
+      // Generar calendario
       let calendarioBase64 = '';
       if (data.diasCalendario && data.diasCalendario.length > 0) {
-        console.log('📅 Generando calendario...');
         calendarioBase64 = await this.calendarService.generarCalendarioImagen(
           data.diasCalendario,
           data.mes,
@@ -66,7 +57,6 @@ export class PdfGeneratorService {
         );
         
         if (calendarioBase64 && calendarioBase64.length > 100) {
-          console.log('✅ Calendario generado correctamente');
         }
       }
 
@@ -83,12 +73,11 @@ export class PdfGeneratorService {
         },
 
         content: [
-          // 📌 Título
           { text: data.trabajador, style: 'title' },
           { text: `Mes de ${data.mes} ${data.anio}`, style: 'subtitle' },
           { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 1 }], margin: [0, 10, 0, 20] },
 
-          // 📊 Resumen de estadísticas
+          // Resumen de estadísticas
           {
             columns: [
               {
@@ -109,7 +98,6 @@ export class PdfGeneratorService {
             margin: [0, 0, 0, 20]
           },
 
-          // 📅 Calendario (si está disponible)
           ...(calendarioBase64 && calendarioBase64.length > 100 ? [
             { text: 'Calendario del Mes', style: 'sectionTitle', margin: [0, 20, 0, 10] },
             {
@@ -120,7 +108,7 @@ export class PdfGeneratorService {
             }
           ] : []),
 
-          // 📋 Tabla de resumen
+          // Tabla de resumen
           {
             table: {
               widths: ['*', '*', '*', '*'],
@@ -143,15 +131,13 @@ export class PdfGeneratorService {
             margin: [0, 0, 0, 20]
           },
 
-          // 🔄 Salto de página antes del gráfico
           { text: '', pageBreak: 'before' },
 
-          // 📊 Gráfico de horas trabajadas (si está disponible)
           ...(graficoBase64 && graficoBase64.length > 100 ? [
             { text: 'Análisis de Horas Trabajadas', style: 'sectionTitle', margin: [0, 0, 0, 15] },
             {
               image: graficoBase64,
-              width: 515, // 👈 Ancho completo de la página (A4 - márgenes)
+              width: 515, 
               alignment: 'center',
               margin: [0, 0, 0, 20]
             }
@@ -183,12 +169,9 @@ export class PdfGeneratorService {
         }
       };
 
-      console.log('✅ Generando PDF...');
       pdfMake.createPdf(docDefinition).download(`reporte_${data.trabajador}_${data.mes}_${data.anio}.pdf`);
-      console.log('✅ PDF descargado exitosamente');
       
     } catch (error) {
-      console.error('❌ Error al generar el PDF:', error);
       alert('Error al generar el PDF. Por favor, intente nuevamente.');
     }
   }

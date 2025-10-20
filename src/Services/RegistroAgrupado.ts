@@ -66,7 +66,7 @@ export class RegistroProcessorService {
     try {
       localStorage.setItem(this.KEY, JSON.stringify(registros));
     } catch (error) {
-      console.error('Error guardando en localStorage:', error);
+      alert(`Error guardando en localStorage: ${error}`);
     }
   }
 

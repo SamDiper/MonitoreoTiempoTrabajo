@@ -10,12 +10,10 @@ export class calendarioService {
     return new Promise((resolve, reject) => {
       try {
         if (!diasCalendario || diasCalendario.length === 0) {
-          console.warn('No hay días para generar el calendario');
           resolve('');
           return;
         }
 
-        // Crear canvas temporal
         const canvas = document.createElement('canvas');
         canvas.width = 800;
         canvas.height = 700;
@@ -47,7 +45,7 @@ export class calendarioService {
         ctx.textAlign = 'center';
         ctx.fillText(`${mes} ${anio}`, canvas.width / 2, 40);
 
-        // Encabezados de días
+        // Encabezados
         const diasSemana = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
         ctx.font = 'bold 16px Arial';
         ctx.fillStyle = '#4b5563';
@@ -59,7 +57,7 @@ export class calendarioService {
           ctx.fillText(dia, x, y);
         });
 
-        // Dibujar días del calendario
+        // Dias del calendario
         let currentRow = 0;
         let currentCol = 0;
 
@@ -116,7 +114,6 @@ export class calendarioService {
             const imageBase64 = canvas.toDataURL('image/png', 1.0);
             
             if (!imageBase64 || imageBase64 === 'data:,') {
-              console.error('Imagen del calendario vacía');
               reject('Error al generar imagen del calendario');
             } else {
               ('✅ Calendario generado correctamente');
@@ -124,14 +121,12 @@ export class calendarioService {
               resolve(imageBase64);
             }
           } catch (error) {
-            console.error('Error al convertir calendario a imagen:', error);
             document.body.removeChild(canvas);
             reject(error);
           }
         }, 500);
 
       } catch (error) {
-        console.error('Error en generarCalendarioImagen:', error);
         reject(error);
       }
     });
