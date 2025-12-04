@@ -3,14 +3,15 @@ import { DashboardComponent } from '../Pages/dash-prueba/dashboard';
 import { Login } from '../Pages/login/login';
 import { TrabajadorDetailsComponent } from '../Pages/tabajador-details/tabajador-details';
 import { RangosDetails } from '../Pages/rangos-details/rangos-details';
+import { authGuard } from './guards/auth-guard';
 
 export const routes: Routes = [
 
   { path: '', redirectTo: '/login', pathMatch: 'full' },
-  { path: 'dashboard', component: DashboardComponent },
+  { path: 'dashboard', canActivate: [authGuard], component: DashboardComponent },
   { path: 'login', component: Login },
-  { path: 'trabajador', component: TrabajadorDetailsComponent },
-  { path: 'trabajador/:nombre', component: TrabajadorDetailsComponent },
-  { path: 'rangos', component: RangosDetails },
+  { path: 'trabajador',canActivate: [authGuard], component: TrabajadorDetailsComponent },
+  { path: 'trabajador/:nombre',canActivate: [authGuard], component: TrabajadorDetailsComponent },
+  { path: 'rangos',canActivate: [authGuard], component: RangosDetails },
 
 ];
