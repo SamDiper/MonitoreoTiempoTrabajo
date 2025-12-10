@@ -1,23 +1,41 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { RegistroProcessorService, RegistrosAgrupados } from '../../Services/RegistroAgrupado';
 import { Subscription } from 'rxjs';
 
-
+// ========== INTERFACES ==========
 interface RangoFrecuencia {
   rango: string;
   cantidad: number;
   porcentaje: number;
   promedioDiario: string;
-  tendencia: 'up' | 'down' | 'flat';
-  variacion: number;
 }
 
-interface EstadisticaHoraria {
-  hora: string;
-  entradas: number;
-  salidas: number;
+interface TrabajadorStats {
+  nombre: string;
+  totalHoras: number;
+  dias: number;
+  promedio: string;
+  promedioDecimal: number;
+}
+
+interface TrabajadorEntrada {
+  nombre: string;
+  rangoFrecuente: string;
+  horaPromedio: number;
+  horaPromedioFormato: string;
+  totalDias: number;
+  frecuencia: number;
+}
+
+interface TrabajadorSalida {
+  nombre: string;
+  rangoFrecuente: string;
+  horaPromedio: number;
+  horaPromedioFormato: string;
+  totalDias: number;
+  frecuencia: number;
 }
 
 @Component({
@@ -27,20 +45,16 @@ interface EstadisticaHoraria {
   templateUrl: './dashboard.html',
   styleUrl: '../../output.css',
 })
-export class DashboardComponent implements OnInit {
-estadisticasGenerales: any = {};
-  trabajadoresArray: any[] = [];
-  promedioGeneral = '';
-  
-  // Estado
+export class DashboardComponent implements OnInit, OnDestroy {
+  // ========== ESTADO ==========
   private periodo: 'hoy' | 'semana' | 'mes' | 'siempre' = 'semana';
   private subscription?: Subscription;
   private datosAgrupados: RegistrosAgrupados = {};
+  private datosFiltrados: RegistrosAgrupados = {};
   
-  // Datos calculados
+  // ========== DATOS - FRECUENCIA GENERAL ==========
   private _topRangosEntrada: RangoFrecuencia[] = [];
   private _topRangosSalida: RangoFrecuencia[] = [];
-  private _estadisticasHorarias: EstadisticaHoraria[] = [];
   private _totalEntradas = 0;
   private _totalSalidas = 0;
   private _horaPicoEntrada = 'N/A';
@@ -48,115 +62,73 @@ estadisticasGenerales: any = {};
   private _maxEntradas = 1;
   private _maxSalidas = 1;
 
-  // Rankings
-  rankingMasHoras: any[] = [];
-  rankingMenosHoras: any[] = [];
-  rankingMasPromedio: any[] = [];
+  // ========== DATOS - HORAS TRABAJADAS ==========
+  trabajadoresArray: TrabajadorStats[] = [];
+  promedioGeneral = '00:00:00';
+  rankingMasHoras: TrabajadorStats[] = [];
+  rankingMasPromedio: TrabajadorStats[] = [];
   
-  // Toggles
+  // ========== DATOS - FRECUENCIA POR TRABAJADOR ==========
+  trabajadoresEntradas: TrabajadorEntrada[] = [];
+  trabajadoresSalidas: TrabajadorSalida[] = [];
+  rankingEntradas: TrabajadorEntrada[] = [];
+  rankingSalidas: TrabajadorSalida[] = [];
+
+  // ========== ESTADÍSTICAS GENERALES ==========
+  estadisticasGenerales = {
+    totalTrabajadores: 0,
+    totalDias: 0,
+    horasTotales: 0
+  };
+  
+  // ========== TOGGLES ==========
   mostrarMasHoras = true;
+  mostrarMayorPromedio = true;
+  mostrarEntradaTemprana = true;
+  mostrarSalidaTemprana = true;
 
   constructor(private registroService: RegistroProcessorService) {}
 
   ngOnInit() {
     this.subscription = this.registroService.registros$.subscribe(agrupados => {
       this.datosAgrupados = agrupados;
-      this.procesarDatos();
+      this.actualizarTodo();
     });
-
-    this.cargarEstadisticas();
-
   }
 
   ngOnDestroy() {
     this.subscription?.unsubscribe();
   }
 
+  // ========== MÉTODO CENTRAL ==========
+  private actualizarTodo() {
+    this.filtrarDatosPorPeriodo();
+    this.calcularTopRangosGenerales();
+    this.calcularEstadisticasHoras();
+    this.calcularFrecuenciaEntradas();
+    this.calcularFrecuenciaSalidas();
+    this.actualizarRankings();
+    this.calcularEstadisticasGenerales();
+  }
+
+  // ========== PERÍODO ==========
   cambiarPeriodo(p: 'hoy' | 'semana' | 'mes' | 'siempre') {
     this.periodo = p;
-    this.procesarDatos();
+    this.actualizarTodo();
   }
 
   periodoSeleccionado() {
     return this.periodo;
   }
 
-  cantidadTop() {
-    return 5;
-  }
-
-  totalEntradas() {
-    return this._totalEntradas;
-  }
-
-  totalSalidas() {
-    return this._totalSalidas;
-  }
-
-  horaPickEntrada() {
-    return this._horaPicoEntrada;
-  }
-
-  horaPickSalida() {
-    return this._horaPicoSalida;
-  }
-
-  topRangosEntrada() {
-    return this._topRangosEntrada;
-  }
-
-  topRangosSalida() {
-    return this._topRangosSalida;
-  }
-
-  maxEntradas() {
-    return this._maxEntradas;
-  }
-
-  maxSalidas() {
-    return this._maxSalidas;
-  }
-
-  estadisticasHorarias() {
-    return this._estadisticasHorarias;
-  }
-
-  calcularAnchoBarra(cantidad: number, max: number): string {
-    if (max === 0) return '0%';
-    return `${Math.round((cantidad / max) * 100)}%`;
-  }
-
-  obtenerColorTendencia(tendencia: 'up' | 'down' | 'flat'): string {
-    switch (tendencia) {
-      case 'up': return 'text-green-600';
-      case 'down': return 'text-red-600';
-      default: return 'text-gray-500';
-    }
-  }
-
-  obtenerIconoTendencia(tendencia: 'up' | 'down' | 'flat'): string {
-    switch (tendencia) {
-      case 'up': return 'M5 10l7-7m0 0l7 7m-7-7v18';
-      case 'down': return 'M19 14l-7 7m0 0l-7-7m7 7V3';
-      default: return 'M5 12h14';
-    }
-  }
-
-private procesarDatos() {
+  private filtrarDatosPorPeriodo() {
     const fechasFiltradas = this.obtenerFechasPorPeriodo();
-    
-    // Filtrar datos según el periodo
-    const datosFiltrados: RegistrosAgrupados = {};
+    this.datosFiltrados = {};
     fechasFiltradas.forEach(fecha => {
       if (this.datosAgrupados[fecha]) {
-        datosFiltrados[fecha] = this.datosAgrupados[fecha];
+        this.datosFiltrados[fecha] = this.datosAgrupados[fecha];
       }
     });
-    
-    // Calcular estadísticas
-    this.calcularTotales(datosFiltrados);
-    this.calcularTopRangos(datosFiltrados);
-    this.calcularDistribucionHoraria(datosFiltrados);
   }
 
   private obtenerFechasPorPeriodo(): string[] {
@@ -172,176 +144,391 @@ private procesarDatos() {
       switch (this.periodo) {
         case 'hoy':
           return fecha.toDateString() === hoy.toDateString();
-        
         case 'semana':
           const hace7dias = new Date(hoy);
           hace7dias.setDate(hoy.getDate() - 7);
-          return fecha >= hace7dias && fecha <= hoy; 
-        
+          return fecha >= hace7dias && fecha <= hoy;
         case 'mes':
           const hace30dias = new Date(hoy);
           hace30dias.setDate(hoy.getDate() - 30);
           return fecha >= hace30dias && fecha <= hoy;
-        
         default:
           return true;
       }
     });
   }
 
-  private calcularTotales(datos: RegistrosAgrupados) {
-    let totalEntradas = 0;
-    let totalSalidas = 0;
+  // ========== GETTERS PARA HTML ==========
+  totalEntradas() { return this._totalEntradas; }
+  totalSalidas() { return this._totalSalidas; }
+  horaPickEntrada() { return this._horaPicoEntrada; }
+  horaPickSalida() { return this._horaPicoSalida; }
+  topRangosEntrada() { return this._topRangosEntrada; }
+  topRangosSalida() { return this._topRangosSalida; }
+  maxEntradas() { return this._maxEntradas; }
+  maxSalidas() { return this._maxSalidas; }
 
-    Object.values(datos).forEach(dia => {
-      Object.values(dia).forEach(() => {
-
-      });
-    });
-
-    this._totalEntradas = totalEntradas;
-    this._totalSalidas = totalSalidas;
-  }
-
-  private calcularTopRangos(datos: RegistrosAgrupados) {
+  // ========== CÁLCULO DE RANGOS GENERALES ==========
+  private calcularTopRangosGenerales() {
     const rangosEntrada = new Map<string, number>();
     const rangosSalida = new Map<string, number>();
 
-    // Contar frecuencias por rango
-    Object.values(datos).forEach(dia => {
+    Object.values(this.datosFiltrados).forEach(dia => {
       Object.values(dia).forEach(trabajador => {
-        const rangoEntrada = this.obtenerRango(trabajador.hora_entrada);
-        const rangoSalida = this.obtenerRango(trabajador.hora_salida);
+        const rangoEntrada = this.obtenerRango15Min(trabajador.hora_entrada);
+        const rangoSalida = this.obtenerRango15Min(trabajador.hora_salida);
         
         rangosEntrada.set(rangoEntrada, (rangosEntrada.get(rangoEntrada) || 0) + 1);
         rangosSalida.set(rangoSalida, (rangosSalida.get(rangoSalida) || 0) + 1);
       });
     });
 
-    const totalDias = Object.keys(datos).length || 1;
+    const totalDias = Object.keys(this.datosFiltrados).length || 1;
 
-    // Convertir a array y ordenar
-    this._topRangosEntrada = this.convertirYOrdenarRangos(rangosEntrada, totalDias,'entrada');
-    this._topRangosSalida = this.convertirYOrdenarRangos(rangosSalida, totalDias,'salida');
+    this._totalEntradas = 0;
+    this._totalSalidas = 0;
 
-    // Actualizar máximos para barras
+    this._topRangosEntrada = this.convertirARangoFrecuencia(rangosEntrada, totalDias, 'entrada');
+    this._topRangosSalida = this.convertirARangoFrecuencia(rangosSalida, totalDias, 'salida');
+
     this._maxEntradas = this._topRangosEntrada[0]?.cantidad || 1;
     this._maxSalidas = this._topRangosSalida[0]?.cantidad || 1;
-
-    // Obtener horas pico
     this._horaPicoEntrada = this._topRangosEntrada[0]?.rango || 'N/A';
     this._horaPicoSalida = this._topRangosSalida[0]?.rango || 'N/A';
   }
 
-  private obtenerRango(hora: string): string {
+  private obtenerRango15Min(hora: string): string {
     if (!hora) return '00:00 - 00:15';
     
     const [h, m] = hora.split(':').map(Number);
     const minutosTotales = h * 60 + m;
-    
-    // Rangos de N minutos
     const rangoInicio = Math.floor(minutosTotales / 15) * 15;
     const rangoFin = rangoInicio + 15;
     
-    const formatearHora = (mins: number) => {
+    const formatear = (mins: number) => {
       const horas = Math.floor(mins / 60);
       const minutos = mins % 60;
       return `${horas.toString().padStart(2, '0')}:${minutos.toString().padStart(2, '0')}`;
     };
     
-    return `${formatearHora(rangoInicio)} - ${formatearHora(rangoFin)}`;
+    return `${formatear(rangoInicio)} - ${formatear(rangoFin)}`;
   }
 
-  private convertirYOrdenarRangos(rangosMap: Map<string, number>, totalDias: number,  tipo: 'entrada' | 'salida'):
-    RangoFrecuencia[] {
+
+
+  private obtenerRangoDesdeDecimal(horaDecimal: number): string {
+    const horas = Math.floor(horaDecimal);
+    const minutos = Math.floor((horaDecimal - horas) * 60);
+    const minutosTotales = horas * 60 + minutos;
+    
+    const rangoInicio = Math.floor(minutosTotales / 15) * 15;
+    const rangoFin = rangoInicio + 15; 
+    
+    const formatear = (mins: number) => {
+      const h = Math.floor(mins / 60);
+      const m = mins % 60;
+      return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+    };
+    
+    return `${formatear(rangoInicio)} - ${formatear(rangoFin)}`;
+  }
+
+  private convertirARangoFrecuencia(
+    rangosMap: Map<string, number>, 
+    totalDias: number, 
+    tipo: 'entrada' | 'salida'
+  ): RangoFrecuencia[] {
     const total = Array.from(rangosMap.values()).reduce((a, b) => a + b, 0) || 1;
     
-    var stats = Array.from(rangosMap.entries())
+    const stats = Array.from(rangosMap.entries())
       .map(([rango, cantidad]) => ({
         rango,
         cantidad,
         porcentaje: Math.round((cantidad / total) * 100),
-        promedioDiario: `${(cantidad / totalDias).toFixed(1)}/día`,
-        tendencia: 'flat' as const, 
-        variacion: 0
+        promedioDiario: `${(cantidad / totalDias).toFixed(1)}/día`
       }))
       .sort((a, b) => b.cantidad - a.cantidad)
       .slice(0, 5);
       
-      if (tipo === 'entrada') {
-        stats.forEach(element => this._totalEntradas += element.cantidad);
-      } else {
-        stats.forEach(element => this._totalSalidas += element.cantidad);
-      }
+    if (tipo === 'entrada') {
+      stats.forEach(e => this._totalEntradas += e.cantidad);
+    } else {
+      stats.forEach(e => this._totalSalidas += e.cantidad);
+    }
 
-      return stats;
-      
+    return stats;
   }
 
-  private calcularDistribucionHoraria(datos: RegistrosAgrupados) {
-    const distribucion = new Array(24).fill(0).map((_, i) => ({
-      hora: `${i.toString().padStart(2, '0')}:00`,
-      entradas: 0,
-      salidas: 0
-  }));
+  // ========== CÁLCULO DE HORAS TRABAJADAS ==========
+  private calcularEstadisticasHoras() {
+    const porTrabajador = new Map<string, { totalHoras: number; dias: number }>();
 
-    Object.values(datos).forEach(dia => {
-      Object.values(dia).forEach(trabajador => {
-        // Extraer hora de entrada
-        const [horaEntrada] = trabajador.hora_entrada.split(':').map(Number);
-        if (horaEntrada >= 0 && horaEntrada < 24) {
-          distribucion[horaEntrada].entradas++;
+    Object.values(this.datosFiltrados).forEach(dia => {
+      Object.entries(dia).forEach(([nombre, trabajador]) => {
+        const horasTrabajadas = this.calcularHorasTrabajadas(
+          trabajador.hora_entrada, 
+          trabajador.hora_salida
+        );
+        
+        if (!porTrabajador.has(nombre)) {
+          porTrabajador.set(nombre, { totalHoras: 0, dias: 0 });
         }
+        
+        const stats = porTrabajador.get(nombre)!;
+        stats.totalHoras += horasTrabajadas;
+        stats.dias += 1;
+      });
+    });
 
-        // Extraer hora de salida
-        const [horaSalida] = trabajador.hora_salida.split(':').map(Number);
-        if (horaSalida >= 0 && horaSalida < 24) {
-          distribucion[horaSalida].salidas++;
+    this.trabajadoresArray = Array.from(porTrabajador.entries()).map(([nombre, datos]) => {
+      const promedio = datos.dias > 0 ? datos.totalHoras / datos.dias : 0;
+      return {
+        nombre,
+        totalHoras: datos.totalHoras,
+        dias: datos.dias,
+        promedio: this.formatearHoras(promedio),
+        promedioDecimal: promedio
+      };
+    });
+
+    const totalHoras = this.trabajadoresArray.reduce((sum, t) => sum + t.totalHoras, 0);
+    const totalDias = this.trabajadoresArray.reduce((sum, t) => sum + t.dias, 0);
+    const promedioGeneralDecimal = totalDias > 0 ? totalHoras / totalDias : 0;
+    this.promedioGeneral = this.formatearHoras(promedioGeneralDecimal);
+  }
+
+  private calcularHorasTrabajadas(entrada: string, salida: string): number {
+    if (!entrada || !salida) return 0;
+    
+    const [hE, mE, sE = 0] = entrada.split(':').map(Number);
+    const [hS, mS, sS = 0] = salida.split(':').map(Number);
+    
+    const entradaMinutos = hE * 60 + mE + sE / 60;
+    const salidaMinutos = hS * 60 + mS + sS / 60;
+    
+    return (salidaMinutos - entradaMinutos) / 60;
+  }
+
+  // ========== CÁLCULO FRECUENCIA ENTRADA POR TRABAJADOR ==========
+  private calcularFrecuenciaEntradas() {
+    const entradasPorTrabajador = new Map<string, number[]>();
+
+    Object.values(this.datosFiltrados).forEach(dia => {
+      Object.entries(dia).forEach(([nombre, trabajador]) => {
+        const horaEntrada = trabajador.hora_entrada;
+        
+        if (horaEntrada && horaEntrada !== '--:--' && horaEntrada.includes(':')) {
+          const horaDecimal = this.horaADecimal(horaEntrada);
+          
+          if (!isNaN(horaDecimal) && horaDecimal > 0) {
+            if (!entradasPorTrabajador.has(nombre)) {
+              entradasPorTrabajador.set(nombre, []);
+            }
+            entradasPorTrabajador.get(nombre)!.push(horaDecimal);
+          }
         }
       });
     });
 
-    this._estadisticasHorarias = distribucion;
+    this.trabajadoresEntradas = [];
+
+    entradasPorTrabajador.forEach((entradas, nombre) => {
+      if (entradas.length > 0) {
+        const sumaHoras = entradas.reduce((acc, h) => acc + h, 0);
+        const horaPromedio = sumaHoras / entradas.length;
+
+        const rangos = new Map<string, number>();
+        entradas.forEach(hora => {
+          const rango = this.obtenerRangoDesdeDecimal(hora);
+          rangos.set(rango, (rangos.get(rango) || 0) + 1);
+        });
+
+        let rangoFrecuente = '';
+        let maxFrecuencia = 0;
+        rangos.forEach((frecuencia, rango) => {
+          if (frecuencia > maxFrecuencia) {
+            maxFrecuencia = frecuencia;
+            rangoFrecuente = rango;
+          }
+        });
+
+        this.trabajadoresEntradas.push({
+          nombre,
+          rangoFrecuente,
+          horaPromedio,
+          horaPromedioFormato: this.decimalAHoraHHMM(horaPromedio),
+          totalDias: entradas.length,
+          frecuencia: maxFrecuencia
+        });
+      }
+    });
   }
 
-  //* Dashboard de Horas Trabajadas *//
-  cargarEstadisticas() {
-    const stats = this.registroService.calcularPromediosHorasTrabajadas();
-    
-    this.trabajadoresArray = Array.from(stats.porTrabajador.entries()).map(([nombre, datos]) => ({
-      nombre,
-      totalHoras: datos.totalHoras,
-      dias: datos.dias,
-      promedio: datos.promedio,
-      promedioDecimal: this.registroService.horasHHMMSSADecimal(datos.promedio)
-    }));
-    
-    this.promedioGeneral = stats.promedioGeneral;    
-    this.actualizarRankings();
+  // ========== CÁLCULO FRECUENCIA SALIDA POR TRABAJADOR ==========
+  private calcularFrecuenciaSalidas() {
+    const salidasPorTrabajador = new Map<string, number[]>();
+
+    Object.values(this.datosFiltrados).forEach(dia => {
+      Object.entries(dia).forEach(([nombre, trabajador]) => {
+        const horaSalida = trabajador.hora_salida;
+        
+        if (horaSalida && horaSalida !== '--:--' && horaSalida.includes(':')) {
+          const horaDecimal = this.horaADecimal(horaSalida);
+          
+          if (!isNaN(horaDecimal) && horaDecimal > 0) {
+            if (!salidasPorTrabajador.has(nombre)) {
+              salidasPorTrabajador.set(nombre, []);
+            }
+            salidasPorTrabajador.get(nombre)!.push(horaDecimal);
+          }
+        }
+      });
+    });
+
+    this.trabajadoresSalidas = [];
+
+    salidasPorTrabajador.forEach((salidas, nombre) => {
+      if (salidas.length > 0) {
+        const sumaHoras = salidas.reduce((acc, h) => acc + h, 0);
+        const horaPromedio = sumaHoras / salidas.length;
+
+        const rangos = new Map<string, number>();
+        salidas.forEach(hora => {
+          const rango = this.obtenerRangoDesdeDecimal(hora);
+          rangos.set(rango, (rangos.get(rango) || 0) + 1);
+        });
+
+        let rangoFrecuente = '';
+        let maxFrecuencia = 0;
+        rangos.forEach((frecuencia, rango) => {
+          if (frecuencia > maxFrecuencia) {
+            maxFrecuencia = frecuencia;
+            rangoFrecuente = rango;
+          }
+        });
+
+        this.trabajadoresSalidas.push({
+          nombre,
+          rangoFrecuente,
+          horaPromedio,
+          horaPromedioFormato: this.decimalAHoraHHMM(horaPromedio),
+          totalDias: salidas.length,
+          frecuencia: maxFrecuencia
+        });
+      }
+    });
   }
 
+  // ========== ACTUALIZAR RANKINGS ==========
   actualizarRankings() {
-    // Ranking por total de horas
+    this.actualizarRankingHoras();
+    this.actualizarRankingPromedio();
+    this.actualizarRankingEntradas();
+    this.actualizarRankingSalidas();
+  }
+
+  private actualizarRankingHoras() {
     this.rankingMasHoras = [...this.trabajadoresArray]
       .sort((a, b) => this.mostrarMasHoras ? 
         b.totalHoras - a.totalHoras : 
         a.totalHoras - b.totalHoras
       )
-      .slice(0, 5);
-    
-    // Ranking por promedio diario
-    this.rankingMasPromedio = [...this.trabajadoresArray]
-      .sort((a, b) => b.promedioDecimal - a.promedioDecimal)
-      .slice(0, 5);
+      .slice(0, 10);
   }
 
+  private actualizarRankingPromedio() {
+    this.rankingMasPromedio = [...this.trabajadoresArray]
+      .sort((a, b) => this.mostrarMayorPromedio ? 
+        b.promedioDecimal - a.promedioDecimal : 
+        a.promedioDecimal - b.promedioDecimal
+      )
+      .slice(0, 10);
+  }
+
+  private actualizarRankingEntradas() {
+    this.rankingEntradas = [...this.trabajadoresEntradas]
+      .sort((a, b) => this.mostrarEntradaTemprana ? 
+        a.horaPromedio - b.horaPromedio : 
+        b.horaPromedio - a.horaPromedio
+      )
+      .slice(0, 10);
+  }
+
+  private actualizarRankingSalidas() {
+    this.rankingSalidas = [...this.trabajadoresSalidas]
+      .sort((a, b) => this.mostrarSalidaTemprana ? 
+        a.horaPromedio - b.horaPromedio : 
+        b.horaPromedio - a.horaPromedio
+      )
+      .slice(0, 10);
+  }
+
+  // ========== TOGGLES ==========
   toggleHoras() {
     this.mostrarMasHoras = !this.mostrarMasHoras;
-    this.actualizarRankings();
+    this.actualizarRankingHoras();
   }
 
-  // Helper para formatear
+  togglePromedio() {
+    this.mostrarMayorPromedio = !this.mostrarMayorPromedio;
+    this.actualizarRankingPromedio();
+  }
+
+  toggleRangosFrecuenciaEntrada() {
+    this.mostrarEntradaTemprana = !this.mostrarEntradaTemprana;
+    this.actualizarRankingEntradas();
+  }
+
+  toggleRangosFrecuenciaSalida() {
+    this.mostrarSalidaTemprana = !this.mostrarSalidaTemprana;
+    this.actualizarRankingSalidas();
+  }
+
+  // ========== ESTADÍSTICAS GENERALES ==========
+  private calcularEstadisticasGenerales() {
+    this.estadisticasGenerales = {
+      totalTrabajadores: this.trabajadoresArray.length,
+      totalDias: Object.keys(this.datosFiltrados).length,
+      horasTotales: this.trabajadoresArray.reduce((sum, t) => sum + t.totalHoras, 0)
+    };
+  }
+
+  // ========== HELPERS ==========
+  horaADecimal(hora: string): number {
+    const partes = hora.split(':');
+    const horas = parseInt(partes[0], 10);
+    const minutos = parseInt(partes[1], 10) || 0;
+    const segundos = parseInt(partes[2], 10) || 0;
+    return horas + minutos / 60 + segundos / 3600;
+  }
+
+  decimalAHoraHHMM(horaDecimal: number): string {
+    const horas = Math.floor(horaDecimal);
+    const minutos = Math.round((horaDecimal - horas) * 60);
+    return `${horas.toString().padStart(2, '0')}:${minutos.toString().padStart(2, '0')}`;
+  }
+
   formatearHoras(horasDecimal: number): string {
-    return this.registroService.horasDecimalAHHMMSS(horasDecimal);
+    const horas = Math.floor(horasDecimal);
+    const minutos = Math.floor((horasDecimal - horas) * 60);
+    const segundos = Math.floor(((horasDecimal - horas) * 60 - minutos) * 60);
+    return `${horas.toString().padStart(2, '0')}:${minutos.toString().padStart(2, '0')}:${segundos.toString().padStart(2, '0')}`;
+  }
+
+  calcularAnchoBarra(cantidad: number, max: number): string {
+    if (max === 0) return '0%';
+    return `${Math.round((cantidad / max) * 100)}%`;
+  }
+
+  getMejorPromedio(): TrabajadorStats | null {
+    if (this.trabajadoresArray.length === 0) return null;
+    return [...this.trabajadoresArray]
+      .sort((a, b) => b.promedioDecimal - a.promedioDecimal)[0];
+  }
+
+  getMejorEntrada(): TrabajadorEntrada | null {
+    if (this.trabajadoresEntradas.length === 0) return null;
+    return [...this.trabajadoresEntradas]
+      .sort((a, b) => a.horaPromedio - b.horaPromedio)[0];
   }
 }
