@@ -4,7 +4,6 @@ import { RouterModule } from '@angular/router';
 import { RegistroProcessorService, RegistrosAgrupados } from '../../Services/RegistroAgrupado';
 import { Subscription } from 'rxjs';
 
-// ========== INTERFACES ==========
 interface RangoFrecuencia {
   rango: string;
   cantidad: number;
@@ -46,7 +45,7 @@ interface TrabajadorSalida {
   styleUrl: '../../output.css',
 })
 export class DashboardComponent implements OnInit, OnDestroy {
-  // ========== ESTADO ==========
+
   private periodo: 'hoy' | 'semana' | 'mes' | 'siempre' = 'semana';
   private subscription?: Subscription;
   private datosAgrupados: RegistrosAgrupados = {};
@@ -100,7 +99,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.subscription?.unsubscribe();
   }
 
-  // ========== MÉTODO CENTRAL ==========
+  // ======== CARGAR DATOS =========
   private actualizarTodo() {
     this.filtrarDatosPorPeriodo();
     this.calcularTopRangosGenerales();
@@ -445,21 +444,46 @@ export class DashboardComponent implements OnInit, OnDestroy {
       .slice(0, 10);
   }
 
+
+  private extraerHoraDeRango(rango: string): number {
+    const inicio = rango.split(' - ')[0];
+    const [h, m] = inicio.split(':').map(Number);
+    return h + m / 60; // 8.5
+  }
+
   private actualizarRankingEntradas() {
     this.rankingEntradas = [...this.trabajadoresEntradas]
-      .sort((a, b) => this.mostrarEntradaTemprana ? 
-        a.horaPromedio - b.horaPromedio : 
-        b.horaPromedio - a.horaPromedio
-      )
+      .sort((a, b) => {
+        // Primero: ordenar por frecuencia (quien más veces entra en su rango)
+        const frecuenciaDiff = b.frecuencia - a.frecuencia;
+        if (frecuenciaDiff !== 0) return frecuenciaDiff;
+        
+        // Segundo (desempate): ordenar por hora del rango
+        const horaA = this.extraerHoraDeRango(a.rangoFrecuente);
+        const horaB = this.extraerHoraDeRango(b.rangoFrecuente);
+        
+        return this.mostrarEntradaTemprana ? 
+          horaA - horaB : 
+          horaB - horaA;
+      })
       .slice(0, 10);
   }
 
   private actualizarRankingSalidas() {
     this.rankingSalidas = [...this.trabajadoresSalidas]
-      .sort((a, b) => this.mostrarSalidaTemprana ? 
-        a.horaPromedio - b.horaPromedio : 
-        b.horaPromedio - a.horaPromedio
-      )
+      .sort((a, b) => {
+        // Primero: ordenar por frecuencia (quien más veces sale en su rango)
+        const frecuenciaDiff = b.frecuencia - a.frecuencia;
+        if (frecuenciaDiff !== 0) return frecuenciaDiff;
+        
+        // Segundo (desempate): ordenar por hora del rango
+        const horaA = this.extraerHoraDeRango(a.rangoFrecuente);
+        const horaB = this.extraerHoraDeRango(b.rangoFrecuente);
+        
+        return this.mostrarSalidaTemprana ? 
+          horaA - horaB : 
+          horaB - horaA;
+      })
       .slice(0, 10);
   }
 
@@ -484,7 +508,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.actualizarRankingSalidas();
   }
 
-  // ========== ESTADÍSTICAS GENERALES ==========
   private calcularEstadisticasGenerales() {
     this.estadisticasGenerales = {
       totalTrabajadores: this.trabajadoresArray.length,

@@ -153,12 +153,12 @@
 
       <div class="bg-white rounded-xl shadow-lg p-6">
         <div class="flex justify-between items-center mb-6">
-          <h2 class="text-xl font-bold text-gray-800">
+          <h2 class="text-lg font-bold text-gray-800">
             Top 10 - Rangos Frecuencia  Entrada
           </h2>
           <button 
             (click)="toggleRangosFrecuenciaEntrada()"
-            class="bg-gray-800 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition cursor-pointer">
+            class="bg-gray-800 text-sm text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition cursor-pointer">
             @if (mostrarMasHoras) {
               Más Horas ↓
             } @else {
@@ -177,7 +177,7 @@
                 <div class="font-semibold text-gray-800">{{ item.nombre }}</div>
                 <div class="text-sm text-gray-600">
                   Total: <span class="font-medium">{{ item.rangoFrecuente }}</span>
-                  <span class="ml-2 text-blue-600">({{ item.frecuencia }} días)</span>
+                  <span class="ml-2 text-blue-600">({{ item.frecuencia }})</span>
                 </div>
               </div>
             </div>
@@ -189,12 +189,12 @@
 
       <div class="bg-white rounded-xl shadow-lg p-6">
         <div class="flex justify-between items-center mb-6">
-          <h2 class="text-xl font-bold text-gray-800">
+          <h2 class="text-lg font-bold text-gray-800">
             Top 10 - Rango Frecuencia Salida
           </h2>
           <button 
             (click)="toggleRangosFrecuenciaSalida()"
-            class="bg-gray-800 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition cursor-pointer">
+            class="bg-gray-800 text-sm text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition cursor-pointer">
             @if (mostrarMasHoras) {
               Más Horas ↓
             } @else {
