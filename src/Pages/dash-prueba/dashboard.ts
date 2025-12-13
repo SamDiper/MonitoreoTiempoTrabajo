@@ -4,39 +4,6 @@ import { RouterModule } from '@angular/router';
 import { RegistroProcessorService, RegistrosAgrupados } from '../../Services/RegistroAgrupado';
 import { Subscription } from 'rxjs';
 
-interface RangoFrecuencia {
-  rango: string;
-  cantidad: number;
-  porcentaje: number;
-  promedioDiario: string;
-}
-
-interface TrabajadorStats {
-  nombre: string;
-  totalHoras: number;
-  dias: number;
-  promedio: string;
-  promedioDecimal: number;
-}
-
-interface TrabajadorEntrada {
-  nombre: string;
-  rangoFrecuente: string;
-  horaPromedio: number;
-  horaPromedioFormato: string;
-  totalDias: number;
-  frecuencia: number;
-}
-
-interface TrabajadorSalida {
-  nombre: string;
-  rangoFrecuente: string;
-  horaPromedio: number;
-  horaPromedioFormato: string;
-  totalDias: number;
-  frecuencia: number;
-}
-
 @Component({
   selector: 'app-dashboard',
   standalone: true,
@@ -454,17 +421,18 @@ export class DashboardComponent implements OnInit, OnDestroy {
   private actualizarRankingEntradas() {
     this.rankingEntradas = [...this.trabajadoresEntradas]
       .sort((a, b) => {
-        // Primero: ordenar por frecuencia (quien más veces entra en su rango)
-        const frecuenciaDiff = b.frecuencia - a.frecuencia;
-        if (frecuenciaDiff !== 0) return frecuenciaDiff;
-        
-        // Segundo (desempate): ordenar por hora del rango
+        // ordenar por hora del rango
         const horaA = this.extraerHoraDeRango(a.rangoFrecuente);
         const horaB = this.extraerHoraDeRango(b.rangoFrecuente);
         
-        return this.mostrarEntradaTemprana ? 
-          horaA - horaB : 
-          horaB - horaA;
+        const horaDiff = this.mostrarEntradaTemprana ? 
+          horaA - horaB :   // Más temprano primero
+          horaB - horaA;    // Más tarde primero
+        
+        if (horaDiff !== 0) return horaDiff;
+        
+        // ordenar por frecuencia (más frecuencia = mejor)
+        return b.frecuencia - a.frecuencia;
       })
       .slice(0, 10);
   }
@@ -472,21 +440,18 @@ export class DashboardComponent implements OnInit, OnDestroy {
   private actualizarRankingSalidas() {
     this.rankingSalidas = [...this.trabajadoresSalidas]
       .sort((a, b) => {
-        // Primero: ordenar por frecuencia (quien más veces sale en su rango)
-        const frecuenciaDiff = b.frecuencia - a.frecuencia;
-        if (frecuenciaDiff !== 0) return frecuenciaDiff;
-        
-        // Segundo (desempate): ordenar por hora del rango
         const horaA = this.extraerHoraDeRango(a.rangoFrecuente);
         const horaB = this.extraerHoraDeRango(b.rangoFrecuente);
         
-        return this.mostrarSalidaTemprana ? 
-          horaA - horaB : 
-          horaB - horaA;
+        const horaDiff = this.mostrarSalidaTemprana ? horaA - horaB : horaB - horaA;    
+        
+        if (horaDiff !== 0) return horaDiff;
+        
+        return b.frecuencia - a.frecuencia;
       })
       .slice(0, 10);
   }
-
+  
   // ========== TOGGLES ==========
   toggleHoras() {
     this.mostrarMasHoras = !this.mostrarMasHoras;

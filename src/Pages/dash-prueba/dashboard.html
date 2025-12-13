@@ -60,168 +60,174 @@
       </div>
     </div>
   </div>
-    <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
+    <div class="flex justify-evenly gap-6 mb-8 ">
+      <main class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 flex-1">
+        <div class="bg-white rounded-xl shadow-lg p-6">
+          <div class="flex justify-between items-center mb-6">
+            <h2 class="text-xl font-bold text-gray-800">
+              Top 10 - Horas Totales
+            </h2>
+            <button 
+              (click)="toggleHoras()"
+              class="bg-gray-800 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition cursor-pointer">
+              @if (mostrarMasHoras) {
+                ↓
+              } @else {
+                ↑
+              }
+            </button>
+          </div>
+          
+          <div class="max-h-96 overflow-y-auto space-y-2">
+            @for (item of rankingMasHoras; track item.nombre; let i = $index) {
+              <div class="flex items-center gap-2 p-1 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                <div class="w-7 h-7 bg-gradient-to-br from-gray-500 to-gray-800 rounded-full flex items-center justify-center text-white font-bold">
+                  {{ i + 1 }}
+                </div>
+                <div class="flex-1">
+                  <div class="font-semibold text-gray-800">{{ item.nombre }}</div>
+                  <div class="text-sm text-gray-600">
+                    Total: <span class="font-medium">{{ formatearHoras(item.totalHoras) }}</span>
+                    <span class="ml-2 text-blue-600">({{ item.dias }} días)</span>
+                  </div>
+                </div>
+              </div>
+            } @empty {
+              <p class="text-gray-500 text-center py-4">No hay datos disponibles</p>
+            }
+          </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-lg p-6">
+          <div class="flex justify-between items-center mb-6">
+            <h2 class="text-xl font-bold text-gray-800">
+              Top 10 - Promedio Diario
+            </h2>
+            <button 
+              (click)="togglePromedio()"
+              class="bg-gray-800 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition cursor-pointer">
+              @if (mostrarMayorPromedio) {
+                ↓
+              } @else {
+                ↑
+              }
+            </button>
+          </div>
+          
+          <div class="max-h-96 overflow-y-auto space-y-2">
+            @for (item of rankingMasPromedio; track item.nombre; let i = $index) {
+              <div class="flex items-center gap-2 p-1 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                <div class="w-7 h-7 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-white font-bold">
+                  {{ i + 1 }}
+                </div>
+                <div class="flex-1">
+                  <div class="font-semibold text-gray-800">{{ item.nombre }}</div>
+                  <div class="text-sm text-gray-600">
+                    Promedio: <span class="font-medium">{{ item.promedio }}</span> /día
+                  </div>
+                </div>
+              </div>
+            } @empty {
+              <p class="text-gray-500 text-center py-4">No hay datos disponibles</p>
+            }
+          </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-lg p-6">
+          <div class="flex justify-between items-center mb-6">
+            <h2 class="text-xl font-bold text-gray-800">
+              Top 10 - Rangos Frecuencia Entrada
+            </h2>
+            <button 
+              (click)="toggleRangosFrecuenciaEntrada()"
+              class="bg-gray-800 text-sm text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition cursor-pointer">
+              @if (mostrarEntradaTemprana) {
+                ↓
+              } @else {
+                ↑
+              }
+            </button>
+          </div>
+          
+          <div class="max-h-96 overflow-y-auto space-y-2">
+            @for (item of rankingEntradas; track item.nombre; let i = $index) {
+              <div class="flex items-center gap-2 p-1 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                <div class="w-7 h-7 bg-gradient-to-br from-green-500 to-green-800 rounded-full flex items-center justify-center text-white font-bold">
+                  {{ i + 1 }}
+                </div>
+                <div class="flex-1">
+                  <div class="font-semibold text-gray-800">{{ item.nombre }}</div>
+                  <div class="text-sm text-gray-600">
+                    Total: <span class="font-medium">{{ item.rangoFrecuente }}</span>
+                    <span class="ml-2 text-blue-600">({{ item.frecuencia }})</span>
+                  </div>
+                </div>
+              </div>
+            } @empty {
+              <p class="text-gray-500 text-center py-4">No hay datos disponibles</p>
+            }
+          </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-lg p-6">
+          <div class="flex justify-between items-center mb-6">
+            <h2 class="text-xl font-bold text-gray-800">
+              Top 10 - Rango Frecuencia Salida
+            </h2>
+            <button 
+              (click)="toggleRangosFrecuenciaSalida()"
+              class="bg-gray-800 text-sm text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition cursor-pointer">
+              @if (mostrarSalidaTemprana) {
+                ↓
+              } @else {
+                ↑
+              }
+            </button>
+          </div>
+          
+          <div class="max-h-96 overflow-y-auto space-y-2">
+            @for (item of rankingSalidas; track item.nombre; let i = $index) {
+              <div class="flex items-center gap-2 p-1 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                <div class="w-7 h-7 bg-gradient-to-br from-purple-500 to-purple-800 rounded-full flex items-center justify-center text-white font-bold">
+                  {{ i + 1 }}
+                </div>
+                <div class="flex-1">
+                  <div class="font-semibold text-gray-800">{{ item.nombre }}</div>
+                  <div class="text-sm text-gray-600">
+                    Total: <span class="font-medium">{{ item.rangoFrecuente }}</span>
+                    <span class="ml-2 text-blue-600">({{ item.totalDias }} días)</span>
+                  </div>
+                </div>
+              </div>
+            } @empty {
+              <p class="text-gray-500 text-center py-4">No hay datos disponibles</p>
+            }
+          </div>
+
+
+        </div>
+      </main>
       
-      <div class="bg-white rounded-xl shadow-lg p-6">
-        <div class="flex justify-between items-center mb-6">
-          <h2 class="text-xl font-bold text-gray-800">
-            Top 10 - Horas Totales
+
+      <aside>
+        <div class="bg-white rounded-xl shadow-lg p-6">
+          <h2 class="text-xl text-center font-bold text-gray-800 mb-6">
+            Promedio de Horas - Todos los Trabajadores ({{ trabajadoresArray.length }})
           </h2>
-          <button 
-            (click)="toggleHoras()"
-            class="bg-gray-800 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition cursor-pointer">
-            @if (mostrarMasHoras) {
-              Más Horas ↓
-            } @else {
-              Menos Horas ↑
-            }
-          </button>
-        </div>
-        
-        <div class="max-h-96 overflow-y-auto space-y-2">
-          @for (item of rankingMasHoras; track item.nombre; let i = $index) {
-            <div class="flex items-center gap-2 p-1 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
-              <div class="w-7 h-7 bg-gradient-to-br from-gray-500 to-gray-800 rounded-full flex items-center justify-center text-white font-bold">
-                {{ i + 1 }}
-              </div>
-              <div class="flex-1">
-                <div class="font-semibold text-gray-800">{{ item.nombre }}</div>
-                <div class="text-sm text-gray-600">
-                  Total: <span class="font-medium">{{ formatearHoras(item.totalHoras) }}</span>
-                  <span class="ml-2 text-blue-600">({{ item.dias }} días)</span>
+          
+          <div class="max-h-96 overflow-y-auto space-y-2">
+            @for (trabajador of trabajadoresArray; track trabajador.nombre) {
+              <div class="flex justify-between items-center p-2 hover:bg-gray-50 rounded">
+                <span class="text-sm font-medium text-gray-700">{{ trabajador.nombre }}</span>
+                <div class="text-right">
+                  <span class="text-xs text-gray-500 block">{{ trabajador.promedio }}</span>
+                  <span class="text-xs text-gray-400">{{ trabajador.dias }} días</span>
                 </div>
               </div>
-            </div>
-          } @empty {
-            <p class="text-gray-500 text-center py-4">No hay datos disponibles</p>
-          }
-        </div>
-      </div>
-
-      <div class="bg-white rounded-xl shadow-lg p-6">
-        <div class="flex justify-between items-center mb-6">
-          <h2 class="text-xl font-bold text-gray-800">
-            Top 10 - Promedio Diario
-          </h2>
-          <button 
-            (click)="togglePromedio()"
-            class="bg-gray-800 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition cursor-pointer">
-            @if (mostrarMasHoras) {
-              Más Horas ↓
-            } @else {
-              Menos Horas ↑
             }
-          </button>
+          </div>
         </div>
-        
-        <div class="max-h-96 overflow-y-auto space-y-2">
-          @for (item of rankingMasPromedio; track item.nombre; let i = $index) {
-            <div class="flex items-center gap-2 p-1 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
-              <div class="w-7 h-7 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-white font-bold">
-                {{ i + 1 }}
-              </div>
-              <div class="flex-1">
-                <div class="font-semibold text-gray-800">{{ item.nombre }}</div>
-                <div class="text-sm text-gray-600">
-                  Promedio: <span class="font-medium">{{ item.promedio }}</span> /día
-                </div>
-              </div>
-            </div>
-          } @empty {
-            <p class="text-gray-500 text-center py-4">No hay datos disponibles</p>
-          }
-        </div>
-      </div>
-
-      <div class="bg-white rounded-xl shadow-lg p-6">
-        <h2 class="text-xl text-center font-bold text-gray-800 mb-6">
-          Promedio de Horas - Todos los Trabajadores ({{ trabajadoresArray.length }})
-        </h2>
-        
-        <div class="max-h-96 overflow-y-auto space-y-2">
-          @for (trabajador of trabajadoresArray; track trabajador.nombre) {
-            <div class="flex justify-between items-center p-2 hover:bg-gray-50 rounded">
-              <span class="text-sm font-medium text-gray-700">{{ trabajador.nombre }}</span>
-              <div class="text-right">
-                <span class="text-xs text-gray-500 block">{{ trabajador.promedio }}</span>
-                <span class="text-xs text-gray-400">{{ trabajador.dias }} días</span>
-              </div>
-            </div>
-          }
-        </div>
-      </div>
-
-      <div class="bg-white rounded-xl shadow-lg p-6">
-        <div class="flex justify-between items-center mb-6">
-          <h2 class="text-lg font-bold text-gray-800">
-            Top 10 - Rangos Frecuencia  Entrada
-          </h2>
-          <button 
-            (click)="toggleRangosFrecuenciaEntrada()"
-            class="bg-gray-800 text-sm text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition cursor-pointer">
-            @if (mostrarMasHoras) {
-              Más Horas ↓
-            } @else {
-              Menos Horas ↑
-            }
-          </button>
-        </div>
-        
-        <div class="max-h-96 overflow-y-auto space-y-2">
-          @for (item of rankingEntradas; track item.nombre; let i = $index) {
-            <div class="flex items-center gap-2 p-1 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
-              <div class="w-7 h-7 bg-gradient-to-br from-green-500 to-green-800 rounded-full flex items-center justify-center text-white font-bold">
-                {{ i + 1 }}
-              </div>
-              <div class="flex-1">
-                <div class="font-semibold text-gray-800">{{ item.nombre }}</div>
-                <div class="text-sm text-gray-600">
-                  Total: <span class="font-medium">{{ item.rangoFrecuente }}</span>
-                  <span class="ml-2 text-blue-600">({{ item.frecuencia }})</span>
-                </div>
-              </div>
-            </div>
-          } @empty {
-            <p class="text-gray-500 text-center py-4">No hay datos disponibles</p>
-          }
-        </div>
-      </div>
-
-      <div class="bg-white rounded-xl shadow-lg p-6">
-        <div class="flex justify-between items-center mb-6">
-          <h2 class="text-lg font-bold text-gray-800">
-            Top 10 - Rango Frecuencia Salida
-          </h2>
-          <button 
-            (click)="toggleRangosFrecuenciaSalida()"
-            class="bg-gray-800 text-sm text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition cursor-pointer">
-            @if (mostrarMasHoras) {
-              Más Horas ↓
-            } @else {
-              Menos Horas ↑
-            }
-          </button>
-        </div>
-        
-        <div class="max-h-96 overflow-y-auto space-y-2">
-          @for (item of rankingSalidas; track item.nombre; let i = $index) {
-            <div class="flex items-center gap-2 p-1 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
-              <div class="w-7 h-7 bg-gradient-to-br from-purple-500 to-purple-800 rounded-full flex items-center justify-center text-white font-bold">
-                {{ i + 1 }}
-              </div>
-              <div class="flex-1">
-                <div class="font-semibold text-gray-800">{{ item.nombre }}</div>
-                <div class="text-sm text-gray-600">
-                  Total: <span class="font-medium">{{ item.rangoFrecuente }}</span>
-                  <span class="ml-2 text-blue-600">({{ item.totalDias }} días)</span>
-                </div>
-              </div>
-            </div>
-          } @empty {
-            <p class="text-gray-500 text-center py-4">No hay datos disponibles</p>
-          }
-        </div>
-      </div>
+      </aside>
     </div>
 
     <!-- Analisis de Rangos -->
